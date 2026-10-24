@@ -215,7 +215,10 @@ const FILE_MB={driver1:3.1,driver2:3.1,driver3:3.2,driver4:3.1,kart1:3.1,kart2:3
 const DRIVER_SCALE=0.72, KART_SCALE=0.675;
 // Collision physics: fixed sub-step, bounciness, side-swipe friction, how fast sideways knock and spin bleed off, spin cap,
 // max height gap for contact, impulse that plays a bump sound, spin inertia boost (game speeds are huge for a 0.5 m kart).
-const PHYS={dt:1/120,restitution:0.35,friction:0.25,knockGrip:4,yawDamp:5,maxYaw:3,contactDy:0.7,thud:2.5,spinInertia:8};
+const PHYS={dt:1/120,restitution:0.35,friction:0.25,knockGrip:4,yawDamp:5,maxYaw:3,contactDy:0.7,thud:2.5,spinInertia:8,
+  wallAt:1.0,wallRestitution:0.3,wallFriction:0.3,wallAlign:8};
+// wallAt: invisible walls at the road edge (fraction of the racing line's half-width); wallAlign: how fast a kart touching
+// a wall swings parallel to it (karts only turn while moving, so without this a kart nosed into a wall stays pinned).
 // Chase camera (Mario Kart style): distance behind, height, look-ahead point, base FOV, extra FOV at top speed,
 // how fast the view swings round after the kart turns, and how fast it follows height changes.
 const CAM={back:1.9,up:0.8,lookAhead:2.2,lookUp:0.35,fov:66,fovBoost:12,fovSpeed:30,yawRate:7,posRate:12};
@@ -517,14 +520,43 @@ function collidePair(A,B){
   const Jx=nx*j+tx*jt, Jz=nz*j+tz*jt;
   const [vAx,vAz]=velAt(A,0,0), [vBx,vBz]=velAt(B,0,0);
   setVel(A,vAx-Jx*iA,vAz-Jz*iA); setVel(B,vBx+Jx*iB,vBz+Jz*iB);
-  const cap=w=>Math.max(-PHYS.maxYaw,Math.min(PHYS.maxYaw,w));
-  A.yaw=cap(A.yaw-(rAz*Jx-rAx*Jz)/A.hull.inertia); B.yaw=cap(B.yaw+(rBz*Jx-rBx*Jz)/B.hull.inertia);
+  A.yaw=capYaw(A.yaw-(rAz*Jx-rAx*Jz)/A.hull.inertia); B.yaw=capYaw(B.yaw+(rBz*Jx-rBx*Jz)/B.hull.inertia);
   return j;
 }
-function collide(){
+const capYaw=w=>Math.max(-PHYS.maxYaw,Math.min(PHYS.maxYaw,w));
+// Track-edge walls: an infinitely heavy line on each side of the racing line, at the local road half-width (averaged
+// with its neighbours so the wall does not step). The capsule end furthest out is pushed back inside, then the same
+// impulse as kart-vs-kart with the wall's 1/m = 0: j = (1+e)(v·n) / (1/m + (r×n)²/I), plus capped scrape friction.
+// A kart that hits nose-first is turned away from the wall; a glancing hit just scrapes along it.
+function collideWall(r,dt){
+  const G=race.G, i=r.idx, n=G.n, at=k=>G.HW[G.closed?(k+n)%n:Math.max(0,Math.min(n-1,k))];
+  const wall=(at(i-1)+at(i)+at(i+1))/3*PHYS.wallAt, t=G.TAN[i], h=r.hull, c=capsule(r);
+  let pen=0, ex=0, ez=0, side=1;
+  for(const [x,z] of [[c[0],c[1]],[c[2],c[3]]]){ const lat=lateral(G,i,{x,z}), d=Math.abs(lat)+h.rad-wall;
+    if(d>pen){pen=d;ex=x;ez=z;side=lat<0?-1:1;} }
+  if(pen<=0) return 0;
+  const nx=t.z*side, nz=-t.x*side; // outward, toward the wall
+  const rx=ex+nx*h.rad-r.pos.x, rz=ez+nz*h.rad-r.pos.z;
+  r.pos.x-=nx*pen; r.pos.z-=nz*pen;
+  // swing the nose parallel to the wall, toward the race direction when it is pointing straight in
+  const fx=Math.sin(r.heading), fz=Math.cos(r.heading);
+  if(fx*nx+fz*nz>0){ const along=fx*t.x+fz*t.z, sgn=Math.abs(along)<0.2?1:Math.sign(along);
+    let da=Math.atan2(t.x*sgn,t.z*sgn)-r.heading; while(da>Math.PI)da-=2*Math.PI; while(da<-Math.PI)da+=2*Math.PI;
+    r.heading+=da*Math.min(1,PHYS.wallAlign*dt); }
+  const [px,pz]=velAt(r,rx,rz), vn=px*nx+pz*nz;
+  if(vn<=0) return 0; // already moving away from the wall
+  const iM=1/h.mass, rn=rz*nx-rx*nz, j=(1+PHYS.wallRestitution)*vn/(iM+rn*rn/h.inertia);
+  const tx=-nz, tz=nx, vt=px*tx+pz*tz, jt=Math.max(-PHYS.wallFriction*j,Math.min(PHYS.wallFriction*j,-vt/iM));
+  const Jx=-nx*j+tx*jt, Jz=-nz*j+tz*jt;
+  const [vx,vz]=velAt(r,0,0); setVel(r,vx+Jx*iM,vz+Jz*iM);
+  r.yaw=capYaw(r.yaw+(rz*Jx-rx*Jz)/h.inertia);
+  return j;
+}
+function collide(dt){
   const R=race.racers;
   for(let a=0;a<R.length;a++)for(let b=a+1;b<R.length;b++){ const j=collidePair(R[a],R[b]);
     if(j>PHYS.thud&&(R[a].isPlayer||R[b].isPlayer)) beep(110,0.08); }
+  R.forEach(r=>{ const j=collideWall(r,dt); if(j>PHYS.thud&&r.isPlayer) beep(90,0.08); });
 }
 
 // ---------- audio ----------
@@ -668,7 +700,7 @@ function updateRace(dt,t){
   else { race.time+=dt; if(race.count>-0.6){race.count-=dt; if(race.count<=-0.6)$('hBig').hidden=true;} }
   // fixed physics sub-steps so fast karts cannot pass through each other in one frame
   const steps=Math.max(1,Math.ceil(dt/PHYS.dt)), h=dt/steps;
-  for(let s=0;s<steps;s++){ R.forEach(r=>moveRacer(r,h,t)); collide(); }
+  for(let s=0;s<steps;s++){ R.forEach(r=>moveRacer(r,h,t)); collide(h); }
   R.forEach(r=>{ const g=r.ko.group; g.position.copy(r.pos);
     const fwd=V(Math.sin(r.heading),0,Math.cos(r.heading)); const up=r.up.clone(); const right=V().crossVectors(up,fwd).normalize(); const f2=V().crossVectors(right,up).normalize();
     g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,f2));
@@ -729,7 +761,7 @@ function frame(){ requestAnimationFrame(frame); const dt=Math.min(0.05,clock.get
 addEventListener('resize',resize); resize();
 fetch('tracks.json').then(r=>r.json()).then(j=>{TRACKS=j;}).catch(()=>{ $('bPlay').disabled=true; $('bPlay').textContent='Could not load tracks'; });
 show('sTitle'); setMode('title'); frame();
-window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify,collidePair,hullOf,raceCam};
+window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify,collidePair,collideWall,hullOf,raceCam};
 })();
 </script>
 
