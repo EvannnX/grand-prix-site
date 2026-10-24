@@ -96,7 +96,7 @@ figcaption b{color:var(--ink);font-weight:600}
     <div class="fact"><b>4</b><span>drivers, Image 2 → Tripo → auto-rig</span></div>
     <div class="fact"><b>4</b><span>karts, Image 2 → Tripo → Smart Segment</span></div>
     <div class="fact"><b>3</b><span>tracks from Sketchfab, CC BY 4.0</span></div>
-    <div class="fact"><b>5</b><span>major shifts in the plan, marked below</span></div>
+    <div class="fact"><b>6</b><span>major shifts in the plan, marked below</span></div>
   </div>
 </section>
 
@@ -122,6 +122,10 @@ figcaption b{color:var(--ink);font-weight:600}
   <a class="shift" href="#e-1908"><time>Oct 24 · 19:08 · Shift 3</time>Kart 4 and the first full build</a>
   <a class="shift" href="#e-2024"><time>Oct 24 · 20:24 · Shift 4</time>Playtest feedback and fixes</a>
   <a class="shift" href="#e-2116"><time>Oct 24 · 21:16 · Shift 5</time>From Notion to this website</a>
+  <a href="#e-2211"><time>Oct 24 · 22:11</time>Online with GitHub Pages</a>
+  <a class="shift" href="#e-2234"><time>Oct 24 · 22:34 · Shift 6</time>Collisions, smaller karts, closer camera</a>
+  <a href="#e-2245"><time>Oct 24 · 22:45</time>Walls at the road edge</a>
+  <a href="#e-2304"><time>Oct 24 · 23:04</time>A tuning panel</a>
   <a href="#links"><time>Reference</time>Links and credits</a>
 </nav>
 
@@ -145,6 +149,10 @@ figcaption b{color:var(--ink);font-weight:600}
     <li><b>Full game (Claude, directed by me).</b> Claude compressed the assets, computed racing lines, and wrote the game.</li>
     <li><b>Playtest and fixes (me → Claude).</b> I played it, reported three problems, and Claude fixed and self-tested them.</li>
     <li><b>This website (me + Claude).</b> The record moved from Notion to a site with two parts: this documentation and the playable game.</li>
+    <li><b>Publishing (me → Claude).</b> Claude put the site on my GitHub and turned on GitHub Pages.</li>
+    <li><b>Physics and camera (me → Claude).</b> I asked for real collisions, smaller karts and a Mario Kart-style camera; Claude did the maths and tested it in simulated races.</li>
+    <li><b>Walls (me → Claude).</b> Karts now bounce off the road edge instead of driving onto the grass.</li>
+    <li><b>Tuning panel (me → Claude).</b> Sliders in the game so I can set the camera, the starting grid and the physics myself.</li>
   </ol>
 </article>
 
@@ -414,6 +422,76 @@ Kart 4 — Futuristic racer: ... pointed nose, small front wing, rounded rear wi
   <h2>Shift 5: from Notion to this website</h2>
   <div class="shiftnote"><b>Shift</b>The journal moves from Notion to a website with two parts: documentation and the playable game, ready for GitHub Pages.</div>
   <p>The Notion connection kept pointing at a different workspace, so the entries after Oct 21 could not be written there, and images could not be uploaded from Claude's side at all. I asked for one website instead: this documentation page, with every screenshot from the process, and the game itself, both deployable to GitHub Pages.</p>
+</article>
+
+<article id="e-2211">
+  <time>Oct 24 · 22:11</time>
+  <h2>Online with GitHub Pages</h2>
+  <p>I gave Claude the zip of this website and asked it to upload it to my GitHub and deploy it. It created the repository <a href="https://github.com/EvannnX/grand-prix-site">EvannnX/grand-prix-site</a> and turned on GitHub Pages from the main branch. The repository is public, because Pages on a free account only works for public repositories. The site is at <a href="https://evannnx.github.io/grand-prix-site/">evannnx.github.io/grand-prix-site</a>; every push to the main branch updates it.</p>
+  <p>Claude checked that the home page, this journal, the game and the 3D model files all load. It did not play the game at this step.</p>
+</article>
+
+<article id="e-2234">
+  <time>Oct 24 · 22:34</time>
+  <h2>Shift 6: collisions, smaller karts, and a closer camera</h2>
+  <div class="shiftnote"><b>Shift</b>Two 20:24 choices are reversed: the karts are drawn at half that size (0.675× instead of 1.35×), and the camera moves in close instead of further back.</div>
+  <p>I asked for three things at once: physical collisions between karts, with the maths worked out properly; karts half their current size; and a camera much closer to the kart, like KartRider or Mario Kart. The old view was too far away.</p>
+  <h3>1 · Collisions</h3>
+  <p>Until now, two karts that touched were just pushed apart and each lost 3% of its speed. Nobody bounced. Claude replaced this with a small physics model:</p>
+  <ul>
+    <li><b>Shape.</b> Each kart is a capsule on the ground: a line along its heading with a radius around it, sized from the measured wheel positions (not from the Tripo bounding boxes, which are wrong, see 20:24).</li>
+    <li><b>Weight.</b> Each kart has a mass: Buggy 1.3, Roadster 1.05, Classic 1.0, Racer 0.9. A light kart that hits a heavy one comes off worse.</li>
+    <li><b>The hit.</b> Overlapping karts are pushed apart by weight, then an impulse acts along the line between them: <code>j = −(1+e)·v·n / (1/m<sub>A</sub> + 1/m<sub>B</sub> + rotation terms)</code>. The total momentum stays the same; about a quarter of the energy is lost (e = 0.35). A hit away from a kart's center makes it spin, and a side-swipe slows both karts through friction.</li>
+    <li><b>Small time steps.</b> Physics runs 120 times a second, so fast karts cannot pass through each other between two frames.</li>
+  </ul>
+  <div class="tw"><table>
+    <thead><tr><th>Test</th><th>Before</th><th>After</th><th>Total momentum</th></tr></thead>
+    <tbody>
+      <tr><td>Rear-end, Classic into Classic</td><td class="n">20 and 5 m/s</td><td class="n">9.9 and 15.1 m/s</td><td class="n">25.0 → 25.0</td></tr>
+      <tr><td>Light Racer into heavy Buggy</td><td class="n">20 and 5 m/s</td><td class="n">8.0 and 13.3 m/s</td><td class="n">24.5 → 24.5</td></tr>
+    </tbody></table></div>
+  <p>The first version spun the karts too hard. A nearly straight rear-end hit set both karts turning at the maximum rate, because a kart only half a metre long resists turning very little. That is correct for the numbers, but the game's speeds are huge for that size. Claude added a "spin resistance" factor of 8, which brings that hit down to about 0.7 rad/s, a small wobble.</p>
+  <h3>2 · Half size</h3>
+  <p>Karts and drivers are now 0.675× instead of 1.35×. A Classic is about 0.5 m long and 0.43 m wide in the game world.</p>
+  <h3>3 · The camera</h3>
+  <p>The camera now sits 1.9 m behind the kart and 0.8 m up, aimed at a point 2.2 m ahead, so the kart sits low in the middle of the screen. It turns a little after the kart does, so corners swing the view, and the field of view widens from 66° to 78° at top speed to make speed visible.</p>
+  <p>The first try still looked far away when driving fast. Claude measured it: the camera was 3 m behind instead of 1.9. The cause was the smoothing, which follows the kart a fixed fraction per frame, so the faster the kart, the further the camera trails (about speed ÷ 12). The distance is now locked to the kart, and only the turning and the height are smoothed.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/2234-camera-before.jpg" alt="Old camera: karts small and far ahead on Mountain Run"></button><figcaption><b>Before.</b> The original build (first commit) on Mountain Run, 3 seconds in. The camera trails far behind.</figcaption></figure>
+    <figure><button data-lb><img src="img/2234-camera-after.jpg" alt="New camera: kart close, low and centered on Mountain Run"></button><figcaption><b>After.</b> Same track, same moment. Half-size karts, chase camera 1.9 m behind.</figcaption></figure>
+  </div>
+  <p>To make the "before" picture honest, Claude ran the original version from the first commit rather than imitating the old camera with the new code; its first attempt at imitating it did not look like the real thing.</p>
+</article>
+
+<article id="e-2245">
+  <time>Oct 24 · 22:45</time>
+  <h2>Walls at the road edge</h2>
+  <p>After the collisions, karts could still drive off the road onto the grass. I asked for walls at the track edges, so that karts bounce off them. Claude added an invisible wall on each side of the racing line, at the road's half-width measured from the road meshes (2.25 to 4.8 m on these tracks). A wall hit uses the same impulse as kart-to-kart, with the wall as infinitely heavy: hit it head-on and you bounce back, hit it at an angle and you are turned away, brush it and you scrape along and slow down.</p>
+  <p>The first version had a trap. In simulated races on Flower Loop, two karts stopped dead at the same hairpin, nose against the outer wall. The karts only turn while moving, and pushing into a wall cancels the forward speed, so a kart pointing at the wall could never turn away from it. Claude made karts that touch a wall swing parallel to it within about a fifth of a second and slide along, as they do in Mario Kart.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Track</th><th>Simulated race, four karts</th><th>Furthest from the center</th></tr></thead>
+    <tbody>
+      <tr><td>Flower Loop (3 laps)</td><td class="n">finished in 87–94 s</td><td class="n">0.96 of the half-width</td></tr>
+      <tr><td>Sky Plaza Climb</td><td class="n">finished in 19–22 s</td><td class="n">0.95</td></tr>
+      <tr><td>Mountain Run</td><td class="n">finished in 46–50 s</td><td class="n">0.91</td></tr>
+    </tbody></table></div>
+  <p>One consequence is still open: the karts' <b>Off-road</b> rating (the Buggy has 5 of 5) no longer matters, because no kart can reach the grass now.</p>
+</article>
+
+<article id="e-2304">
+  <time>Oct 24 · 23:04</time>
+  <h2>A tuning panel, so I can adjust it myself</h2>
+  <p>I asked for a panel in the game where I can adjust things myself, for example the camera and where the karts stand at the start. It opens with the <code>T</code> key or the "Tune" button in the bottom-left corner, and every slider works while the race runs:</p>
+  <ul>
+    <li><b>Camera:</b> distance, height, look-ahead, aim height, field of view, extra field of view at speed, how fast it follows turns and hills.</li>
+    <li><b>Starting grid:</b> which of the four slots I start in, how far behind the line the first row is, the gap between rows, and how far apart the karts stand sideways.</li>
+    <li><b>Kart size</b>, the <b>collision</b> settings (bounciness, friction, spin) and the <b>walls</b> (position, bounciness, scrape, how quickly karts slide along).</li>
+  </ul>
+  <div class="gal one">
+    <figure><button data-lb><img src="img/2304-tuning-panel.jpg" alt="Tuning panel open over the race during the countdown"></button><figcaption><b>The tuning panel during the countdown.</b> The count stays at 3 until the panel is closed.</figcaption></figure>
+  </div>
+  <p>While the panel is open, the countdown waits, so I can move the grid and see the karts move before GO. The settings are saved in my browser. "Copy settings" gives me the values as text, which I can paste back to Claude to make them the new defaults for everyone; "Reset to defaults" undoes my changes.</p>
+  <p>Claude tested the panel at desktop and phone width. On a phone the panel stuck out past the left edge of the screen by 15 pixels; it was fixed before publishing. I also asked Claude to bring this journal up to date, one entry per change, in the same voice as before.</p>
 </article>
 
 <article id="links">

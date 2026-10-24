@@ -212,7 +212,12 @@ const KARTS=[
   steer:['tripo_part_15'],steerAxis:[-0.001,0.38,-0.925],seat:[0,0.14,-0.07],
   mass:0.9,stats:{speed:5,accel:2,grip:4,offroad:1}}];
 const FILE_MB={driver1:3.1,driver2:3.1,driver3:3.2,driver4:3.1,kart1:3.1,kart2:3.6,kart3:2.9,kart4:4.1,map_njxz:7.7,map_qms:6.2,map_tkgcz:6.4};
-const DRIVER_SCALE=0.72, KART_SCALE=0.675;
+const DRIVER_SCALE=0.72;
+const KART={scale:0.675}; // kart + driver size in the race (the tuning panel can change it live)
+// Starting grid: first row's distance behind the start line, gap between rows, sideways offset as a fraction of the
+// road half-width, and the player's slot (0 front-left, 1 front-right, 2 back-left, 3 back-right).
+const GRID={front:1.6,rowGap:3.2,sideFrac:0.35,playerSlot:3};
+const TUNE={hold:false}; // the tuning panel holds the countdown while it is open
 // Collision physics: fixed sub-step, bounciness, side-swipe friction, how fast sideways knock and spin bleed off, spin cap,
 // max height gap for contact, impulse that plays a bump sound, spin inertia boost (game speeds are huge for a 0.5 m kart).
 const PHYS={dt:1/120,restitution:0.35,friction:0.25,knockGrip:4,yawDamp:5,maxYaw:3,contactDy:0.7,thud:2.5,spinInertia:8,
@@ -382,12 +387,11 @@ function makeRacer(i,driverId,kartIdx,isPlayer,kartObj){
     off:0,out:0,stuck:0,reverse:0,lane:0,kvx:0,kvz:0,yaw:0,hull:hullOf(KARTS[kartIdx]),phase:Math.random()*6.28,up:V(0,1,0),grounded:true,wrong:0};
 }
 function placeOnGrid(r,slot){
-  const G=race.G, spacing=1.6;
-  const back=[1,1,3,3][slot]+ (G.closed?0:0), side=[1,-1,1,-1][slot];
-  let i0=race.startIdx;
-  const stepLen=G.P[1].distanceTo(G.P[0])||1; const k=Math.round(back*spacing/stepLen);
+  const G=race.G, back=GRID.front+(slot>>1)*GRID.rowGap, side=slot%2?-1:1;
+  let i0=race.startIdx; r.gridSlot=slot;
+  const stepLen=G.P[1].distanceTo(G.P[0])||1; const k=Math.round(back/stepLen);
   let i=i0-k; if(G.closed)i=(i+G.n)%G.n; else i=Math.max(0,i);
-  const p=G.P[i], t=G.TAN[i]; const w=G.HW[i]*0.35*side;
+  const p=G.P[i], t=G.TAN[i]; const w=G.HW[i]*GRID.sideFrac*side;
   r.pos.set(p.x+t.z*w,p.y+0.6,p.z-t.x*w); r.heading=Math.atan2(t.x,t.z); r.idx=i; r.prog=G.closed?-k:i; r.speed=0; r.vy=0; r.kvx=r.kvz=r.yaw=0;
 }
 function resetRacer(r){
@@ -465,7 +469,7 @@ function aiInput(r,dt,t){
   return {throttle,steer};
 }
 const keys={};
-addEventListener('keydown',e=>{ keys[e.code]=true;
+addEventListener('keydown',e=>{ if(e.target.closest&&e.target.closest('#tuner'))return; keys[e.code]=true;
   if(race&&race.running&&(e.code==='Escape'||e.code==='KeyP')){togglePause();}
   if(e.code==='KeyM'){state.sound=!state.sound; if(audio.g)audio.g.gain.value=state.sound?0.06:0;}
   if(race&&race.running&&!race.paused&&e.code==='KeyR'&&race.go){resetRacer(race.racers[0]);}
@@ -482,7 +486,7 @@ function playerInput(){ const up=keys.KeyW||keys.ArrowUp, dn=keys.KeyS||keys.Arr
 function hullOf(k){
   let hw=0,front=-1e9,rear=1e9;
   for(const key in k.hubs){ const h=k.hubs[key], r=k.radius[key]; hw=Math.max(hw,Math.abs(h[0])+r*0.6); front=Math.max(front,h[2]+r); rear=Math.min(rear,h[2]-r); }
-  const s=KART_SCALE, rad=hw*s, len=(front-rear)*s;
+  const s=KART.scale, rad=hw*s, len=(front-rear)*s;
   return {rad,half:Math.max(0,len/2-rad),cz:(front+rear)/2*s,mass:k.mass,inertia:PHYS.spinInertia*k.mass*(len*len+4*rad*rad)/12};
 }
 const clamp01=x=>Math.max(0,Math.min(1,x));
@@ -665,13 +669,21 @@ function buildRace(T,trackKey,get,lineup){
   const G=trackGeom(T);
   race={T,G,root,road,racers:[],time:0,go:false,running:true,paused:false,count:3.6,startIdx:T.closed?0:6,laps:T.closed?T.laps:1,finishOrder:[],ended:false,endT:0,lastBeep:4};
   lineup.forEach((l,slot)=>{ const ko=assemble(buildDriver(get(DRIVERS[l.d].file)),buildKart(KARTS[l.k],get(KARTS[l.k].file)));
-    toonify(ko.group,state.toon); ko.group.scale.setScalar(KART_SCALE); root.add(ko.group);
-    const r=makeRacer(slot,l.d,l.k,l.p,ko); r.lane=[0,-0.35,0.3,0.05][slot]; r.band=1; placeOnGrid(r,l.p?3:slot-1); race.racers.push(r); });
-  const p=race.racers[0]; race.camYaw=p.heading;
-  camPos.set(p.pos.x-Math.sin(p.heading)*CAM.back,p.pos.y+CAM.up,p.pos.z-Math.cos(p.heading)*CAM.back);
-  camLook.set(p.pos.x+Math.sin(p.heading)*CAM.lookAhead,p.pos.y+CAM.lookUp,p.pos.z+Math.cos(p.heading)*CAM.lookAhead);
+    toonify(ko.group,state.toon); ko.group.scale.setScalar(KART.scale); root.add(ko.group);
+    const r=makeRacer(slot,l.d,l.k,l.p,ko); r.lane=[0,-0.35,0.3,0.05][slot]; r.band=1; race.racers.push(r); });
+  placeGrid();
+  snapCamera();
   show(null); setMode('race'); $('hBig').hidden=false; $('hHint').hidden=false; setTimeout(()=>{$('hHint').hidden=true;},7000);
 }
+// player takes GRID.playerSlot; the AI karts fill the other slots in order
+function placeGrid(){ const ai=[0,1,2,3].filter(s=>s!==GRID.playerSlot);
+  race.racers.forEach(r=>placeOnGrid(r,r.isPlayer?GRID.playerSlot:ai[r.i-1])); }
+function snapCamera(){ const p=race.racers[0]; race.camYaw=p.heading;
+  camPos.set(p.pos.x-Math.sin(p.heading)*CAM.back,p.pos.y+CAM.up,p.pos.z-Math.cos(p.heading)*CAM.back);
+  camLook.set(p.pos.x+Math.sin(p.heading)*CAM.lookAhead,p.pos.y+CAM.lookUp,p.pos.z+Math.cos(p.heading)*CAM.lookAhead); }
+// live hooks for the tuning panel: the grid can only move before GO, kart size applies at once
+function regrid(){ if(!race||race.go)return false; placeGrid(); snapCamera(); return true; }
+function applyKartScale(){ if(!race)return; race.racers.forEach(r=>{ r.ko.group.scale.setScalar(KART.scale); r.hull=hullOf(KARTS[r.kartIdx]); }); }
 function togglePause(){ if(!race||race.ended)return; race.paused=!race.paused; if(race.paused){show('sPause');setMode('pause');engine(0,false);} else {show(null);setMode('race');} }
 $('bResume').onclick=togglePause;
 $('bRestart').onclick=()=>{ startRace(state.track); };
@@ -693,7 +705,7 @@ function moveRacer(r,dt,t){
 function updateRace(dt,t){
   if(race.paused)return;
   const R=race.racers, G=race.G;
-  if(!race.go){ race.count-=dt; const c=Math.ceil(race.count-0.6);
+  if(!race.go){ if(!TUNE.hold)race.count-=dt; const c=Math.ceil(race.count-0.6);
     if(c!==race.lastBeep&&c>=1&&c<=3){race.lastBeep=c; beep(440,0.18);}
     $('hBig').textContent=c>=1?String(c):'GO!';
     if(race.count<=0.6){race.go=true; beep(880,0.4);} }
@@ -761,9 +773,11 @@ function frame(){ requestAnimationFrame(frame); const dt=Math.min(0.05,clock.get
 addEventListener('resize',resize); resize();
 fetch('tracks.json').then(r=>r.json()).then(j=>{TRACKS=j;}).catch(()=>{ $('bPlay').disabled=true; $('bPlay').textContent='Could not load tracks'; });
 show('sTitle'); setMode('title'); frame();
-window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify,collidePair,collideWall,hullOf,raceCam};
+window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify,collidePair,collideWall,hullOf,raceCam,
+  tune:{CAM,PHYS,GRID,KART,TUNE,regrid,applyKartScale,snapCamera,restart:()=>{ if(race&&state.track)startRace(state.track); },get inRace(){return !!race;}}};
 })();
 </script>
+<script src="tuner.js"></script>
 
 </body>
 </html>
