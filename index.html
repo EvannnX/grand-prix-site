@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>NYU Shanghai Grand Prix</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=JetBrains+Mono:wght@600&display=swap">
+<style>
+/* Layout: a starting grid. One big title, then two doors: read how it was made, or race. One deliberate dark theme, matching the game. */
+:root{
+  --bg:#121016; --paper:#1a1721; --ink:#f3eef7; --muted:#ab9fba; --rule:#332c3f;
+  --violet:#a46ae8; --violet-deep:#57068c; --lime:#c8f04b;
+  --display:"Baloo 2","Arial Rounded MT Bold",ui-rounded,system-ui,sans-serif;
+  --body:"Source Serif 4",Georgia,serif; --mono:"JetBrains Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.55;
+  background-image:repeating-linear-gradient(90deg,transparent 0 46px,rgba(255,255,255,.025) 46px 48px)}
+.in{max-width:1080px;margin:0 auto;padding-block:max(48px,env(safe-area-inset-top,0px)) 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.flag{height:14px;width:min(320px,70%);background:conic-gradient(var(--ink) 25%,#121016 0 50%,var(--ink) 0 75%,#121016 0) 0 0/14px 14px;border-radius:3px;margin-bottom:28px}
+.eyebrow{font:600 12px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--lime)}
+h1{font:800 clamp(44px,9vw,104px)/.95 var(--display);margin:12px 0 18px;text-wrap:balance}
+h1 span{color:var(--violet)}
+.lede{max-width:62ch;color:var(--muted);margin:0 0 36px}
+.doors{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:18px}
+.door{display:flex;flex-direction:column;text-decoration:none;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:18px;overflow:hidden;transition:transform .15s,border-color .15s}
+.door:hover,.door:focus-visible{transform:translateY(-3px);border-color:var(--violet);outline:none}
+.door img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:#0d0b10}
+.door div{padding:18px 20px 22px}
+.door h2{font:800 30px/1.05 var(--display);margin:0 0 6px}
+.door p{margin:0;color:var(--muted);font-size:16px}
+.door .go{display:inline-block;margin-top:14px;font:600 13px/1 var(--mono);color:var(--lime)}
+.play h2{color:var(--lime)}
+.foot{margin-top:40px;color:var(--muted);font-size:14px;max-width:70ch}
+.foot a{color:var(--violet)}
+</style>
+</head>
+<body>
+<div class="in">
+  <div class="flag" aria-hidden="true"></div>
+  <span class="eyebrow">AI Writathon · Perspectives on the Humanities · NYU Shanghai · Fall 2026</span>
+  <h1>NYU Shanghai <span>Grand Prix</span></h1>
+  <p class="lede">A cartoon kart racer made with generative AI. Four chibi drivers from Image 2 and Tripo, four AI-generated karts, three tracks from Sketchfab, and a dated journal of every prompt, decision and change of plan along the way.</p>
+  <div class="doors">
+    <a class="door" href="docs/index.html">
+      <img src="docs/img/2024-drivers-seated.jpg" alt="The four drivers seated in their karts">
+      <div><h2>Documentation</h2><p>The dev journal: prompts, generations, screenshots, the five shifts in the plan, and what the AI tools got wrong.</p><span class="go">Read the journal →</span></div>
+    </a>
+    <a class="door play" href="play/index.html">
+      <img src="docs/img/1908-first-build-race.jpg" alt="Four karts racing on the Sky Plaza Climb track">
+      <div><h2>Play the game</h2><p>Pick a driver and a kart, vote on a track, and race three AI opponents. Needs a keyboard (WASD or arrow keys). Loads about 25 MB.</p><span class="go">Start racing →</span></div>
+    </a>
+  </div>
+  <p class="foot">Drivers appear as Driver 01–04 without names, as agreed with the course instructor. Tracks by <a href="https://sketchfab.com/amogusstrikesback2">amogusstrikesback2</a>, CC BY 4.0. Built with three.js; code drafted with Claude.</p>
+</div>
+</body>
+</html>

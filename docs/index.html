@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Grand Prix Dev Journal</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a printed race-team logbook. A sticky timeline down the left, the journal in one readable column, figures that open full size. One deliberate dark theme, matching the game. */
+:root{
+  --bg:#121016; --paper:#1a1721; --paper-2:#231f2c; --ink:#f3eef7; --muted:#ab9fba; --rule:#332c3f;
+  --violet:#a46ae8; --violet-deep:#57068c; --lime:#c8f04b; --gold:#ffcb47;
+  --display:"Baloo 2","Arial Rounded MT Bold",ui-rounded,system-ui,sans-serif;
+  --body:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.62}
+a{color:var(--violet)} a:hover{color:var(--lime)}
+.top{border-bottom:1px solid var(--rule);background:var(--paper)}
+.top .in{max-width:1180px;margin:0 auto;padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.brand{font:800 20px/1 var(--display);color:var(--ink);text-decoration:none}
+.brand span{color:var(--lime)}
+.nav{display:flex;gap:8px;flex-wrap:wrap}
+.nav a{font:600 14px/1 var(--mono);text-decoration:none;color:var(--ink);border:1px solid var(--rule);border-radius:999px;padding:8px 12px}
+.nav a.on{background:var(--violet-deep);border-color:var(--violet)}
+.hero{max-width:1180px;margin:0 auto;padding-block:48px 24px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.eyebrow{font:600 12px/1.4 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--lime)}
+h1{font:800 clamp(38px,6vw,68px)/1.02 var(--display);margin:10px 0 14px;text-wrap:balance}
+.lede{max-width:66ch;color:var(--muted);margin:0}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,210px),1fr));gap:12px;margin-top:26px}
+.fact{background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:14px 16px}
+.fact b{display:block;font:800 26px/1.1 var(--display)}
+.fact span{font-size:14px;color:var(--muted)}
+.wrap{max-width:1180px;margin:0 auto;padding-block:8px 80px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:240px minmax(0,1fr);gap:40px}
+@media (max-width:900px){.wrap{grid-template-columns:minmax(0,1fr)} .toc{position:static!important;max-height:none!important}}
+.toc{position:sticky;top:16px;align-self:start;max-height:calc(100vh - 32px);overflow:auto;border-left:2px solid var(--rule);padding-left:14px}
+.toc p{font:600 12px/1.4 var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:0 0 8px}
+.toc a{display:block;text-decoration:none;color:var(--muted);font-size:14px;line-height:1.35;padding:5px 0}
+.toc a time{display:block;font:600 11px/1.3 var(--mono);color:var(--violet)}
+.toc a.shift{color:var(--ink)} .toc a.shift time{color:var(--lime)}
+main{min-width:0}
+article{border-top:1px solid var(--rule);padding-top:30px;margin-top:30px;scroll-margin-top:16px}
+article:first-child{border-top:0;margin-top:0;padding-top:0}
+article > time{font:600 13px/1 var(--mono);color:var(--violet);letter-spacing:.04em}
+h2{font:800 clamp(26px,3.4vw,34px)/1.12 var(--display);margin:8px 0 14px;text-wrap:balance}
+h3{font:800 20px/1.2 var(--display);margin:26px 0 8px}
+p,ul,ol{max-width:68ch}
+li{margin:4px 0}
+.shiftnote{border:1px solid var(--lime);background:rgba(200,240,75,.07);border-radius:12px;padding:12px 16px;margin:14px 0;max-width:68ch}
+.shiftnote b{font:800 14px/1 var(--display);letter-spacing:.06em;text-transform:uppercase;color:var(--lime);margin-right:6px}
+.note{border-left:3px solid var(--violet);padding:4px 0 4px 14px;color:var(--muted);max-width:68ch}
+blockquote{margin:14px 0;padding:12px 16px;background:var(--paper);border-radius:10px;max-width:68ch;font-size:17px}
+pre{background:#0d0b10;border:1px solid var(--rule);border-radius:10px;padding:14px;overflow-x:auto;font:13px/1.55 var(--mono);white-space:pre-wrap;word-break:break-word;max-width:100%}
+code{font:0.85em var(--mono);background:var(--paper-2);padding:1px 5px;border-radius:5px}
+pre code{background:none;padding:0}
+.tw{overflow-x:auto;max-width:100%;margin:14px 0}
+table{border-collapse:collapse;font-size:15px;min-width:520px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font:600 11px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr));gap:12px;margin:16px 0}
+.gal.wide{grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr))}
+.gal.one{grid-template-columns:minmax(0,1fr)}
+figure{margin:0;background:var(--paper);border:1px solid var(--rule);border-radius:12px;overflow:hidden;display:flex;flex-direction:column}
+figure button{all:unset;cursor:zoom-in;display:block;position:relative;aspect-ratio:4/3;background:#0d0b10}
+.gal.one figure button{aspect-ratio:auto}
+.gal.one figure img{position:static;height:auto}
+figure button:focus-visible{outline:2px solid var(--lime);outline-offset:-2px}
+figure img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+figcaption{padding:10px 12px 12px;font-size:14px;line-height:1.45;color:var(--muted)}
+figcaption b{color:var(--ink);font-weight:600}
+.lb{position:fixed;inset:0;background:rgba(8,6,12,.94);display:grid;place-items:center;padding:24px;z-index:50}
+.lb img{max-width:100%;max-height:calc(100vh - 110px);object-fit:contain;border-radius:8px}
+.lb p{color:var(--ink);font-size:15px;max-width:80ch;text-align:center;margin:12px 0 0}
+.lb button{position:fixed;top:max(14px,env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));font:600 14px var(--mono);background:var(--paper-2);color:var(--ink);border:1px solid var(--rule);border-radius:999px;padding:8px 14px;cursor:pointer}
+[hidden]{display:none!important}
+.foot{color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+<header class="top"><div class="in">
+  <a class="brand" href="../index.html">NYU Shanghai <span>Grand Prix</span></a>
+  <nav class="nav" aria-label="Site"><a href="../index.html">Home</a><a class="on" href="./index.html">Documentation</a><a href="../play/index.html">Play the game</a></nav>
+</div></header>
+
+<section class="hero">
+  <span class="eyebrow">AI Writathon · Perspectives on the Humanities · NYU Shanghai · Fall 2026</span>
+  <h1>Dev journal: building a racing game with generative AI</h1>
+  <p class="lede">A dated record of how the game was made, from the first idea on October 21 to the playable build on October 24: what I asked the AI tools for, what they produced, what I kept or threw away, and every point where the plan changed. Every image opens full size.</p>
+  <div class="facts">
+    <div class="fact"><b>4</b><span>drivers, Image 2 → Tripo → auto-rig</span></div>
+    <div class="fact"><b>4</b><span>karts, Image 2 → Tripo → Smart Segment</span></div>
+    <div class="fact"><b>3</b><span>tracks from Sketchfab, CC BY 4.0</span></div>
+    <div class="fact"><b>5</b><span>major shifts in the plan, marked below</span></div>
+  </div>
+</section>
+
+<div class="wrap">
+<nav class="toc" aria-label="Timeline">
+  <p>Timeline</p>
+  <a href="#workflow"><time>Overview</time>My workflow</a>
+  <a href="#e-1011"><time>Oct 21 · 10:11</time>The first idea</a>
+  <a href="#e-1020"><time>Oct 21 · 10:20</time>PRD in English</a>
+  <a class="shift" href="#e-1026"><time>Oct 21 · 10:26 · Shift 1</time>No multiplayer; AI opponents</a>
+  <a href="#e-1030"><time>Oct 21 · 10:30</time>Likeness rule, two image types</a>
+  <a href="#e-1041"><time>Oct 21 · 10:41</time>Setting up the record</a>
+  <a class="shift" href="#e-1050a"><time>Oct 21 · 10:50 · Shift 2</time>From a log table to a journal</a>
+  <a href="#e-1050b"><time>Oct 21 · 10:50</time>Driver prompts v1</a>
+  <a href="#e-1127"><time>Oct 21 · 11:27</time>Driver 01, photo to rig</a>
+  <a href="#e-1254"><time>Oct 21 · 12:54</time>Drivers 02–04</a>
+  <a href="#e-1310"><time>Oct 21 · 13:10</time>Tracks from Sketchfab</a>
+  <a href="#e-1320"><time>Oct 21 · 13:20</time>Kart prompts v1</a>
+  <a href="#e-1340"><time>Oct 21 · 13:40</time>Kart 1 and segmenting</a>
+  <a href="#e-1810"><time>Oct 24 · 18:10</time>Kart 2 and steering wheels</a>
+  <a href="#e-1822"><time>Oct 24 · 18:22</time>Decision: keep Kart 2 as is</a>
+  <a href="#e-1847"><time>Oct 24 · 18:47</time>Kart 3, Kart 4 image</a>
+  <a class="shift" href="#e-1908"><time>Oct 24 · 19:08 · Shift 3</time>Kart 4 and the first full build</a>
+  <a class="shift" href="#e-2024"><time>Oct 24 · 20:24 · Shift 4</time>Playtest feedback and fixes</a>
+  <a class="shift" href="#e-2116"><time>Oct 24 · 21:16 · Shift 5</time>From Notion to this website</a>
+  <a href="#links"><time>Reference</time>Links and credits</a>
+</nav>
+
+<main>
+<article id="workflow">
+  <time>Overview</time>
+  <h2>My workflow, step by step</h2>
+  <p>Who did what at each step. Times in the entries are when I brought something to Claude; conversations with the professor happened before I reported them.</p>
+  <ol>
+    <li><b>Idea (me).</b> A 3D racing game with AI-generated karts and chibi versions of NYU Shanghai's leaders as drivers; choose a driver and a kart before each race; a 10-second map vote; open-source maps. At first it was meant to be multiplayer.</li>
+    <li><b>Briefing Claude (me → Claude).</b> I uploaded the assignment sheet and the syllabus and described the idea in one message, asking for a PRD.</li>
+    <li><b>PRD v1 (Claude).</b> A Chinese PRD first, then an English version at my request.</li>
+    <li><b>Multiplayer, with Prof. Fedtke (me + professor).</b> The class will not have time to play together, so we changed to single player against AI opponents.</li>
+    <li><b>Likeness, with Prof. Fedtke (me + professor).</b> The leaders appear only in a cartoon style and their names are never shown in the game.</li>
+    <li><b>Updating the plan (me → Claude).</b> I added that the whole game should be cartoon style; Claude rewrote the English PRD.</li>
+    <li><b>Image prompts (me + Claude).</b> Each driver needs a natural-pose preview and a T-pose for rigging; Claude wrote the two prompts.</li>
+    <li><b>Process record (me + Claude).</b> First a Notion log table, then a blog-style journal at my request.</li>
+    <li><b>Drivers (me + Image 2 + Tripo).</b> All four drivers through image → 3D → auto-rig; Claude built a 3D viewer page.</li>
+    <li><b>Tracks (me + Claude).</b> I downloaded three tracks from Sketchfab; Claude checked their licenses and flagged a provenance question.</li>
+    <li><b>Karts (me + Image 2 + Tripo + Claude).</b> Four karts, split into parts with Smart Segment; I labelled the wheels and steering wheels; Claude checked every label against the files.</li>
+    <li><b>Full game (Claude, directed by me).</b> Claude compressed the assets, computed racing lines, and wrote the game.</li>
+    <li><b>Playtest and fixes (me → Claude).</b> I played it, reported three problems, and Claude fixed and self-tested them.</li>
+    <li><b>This website (me + Claude).</b> The record moved from Notion to a site with two parts: this documentation and the playable game.</li>
+  </ol>
+</article>
+
+<article id="e-1011">
+  <time>Oct 21 · 10:11</time>
+  <h2>Starting point: a multiplayer racing game</h2>
+  <p>The assignment asks for a creative piece made in collaboration with a GenAI tool, plus a reflection on the process. I chose the Creative Coding Project option: a small 3D racing game. I uploaded the assignment sheet and the syllabus to Claude and sent this message (my original words):</p>
+  <blockquote lang="zh">这是我这节课的一个作业要求,我打算做一个3d的小赛车游戏,并且可以联机的那种,然后我会用tripo ai生成不同的车和不同的车手(我的想法是用image2生成不同的nyu execusive board的领导的照片的q版形象,然后作为每一次开始之前可以替换的选项然后和不同的tripo生成的车结合,所以是选车+选人)然后10s投票选地图,然后开始,地图我会用不同的开源的项目地图,我现在需要写一个prd</blockquote>
+  <p>In English: "This is an assignment for my class. I plan to make a small 3D racing game that supports online multiplayer. I will use Tripo AI to generate different cars and drivers (my idea is to use Image 2 to turn photos of NYU's executive board leaders into chibi versions, as options that can be swapped before each race and combined with different Tripo cars, so it's choose-a-car + choose-a-person). Then a 10-second vote picks the map, and the race starts. For maps I'll use maps from different open-source projects. I need to write a PRD now."</p>
+  <p>Claude wrote a 10-section PRD in Chinese with a flow diagram and an architecture diagram. Some parts went beyond what I asked for:</p>
+  <ul>
+    <li>A section on the risks of using real people's faces: consent, uploading photos to third-party AI servers, and dignity, with a fallback set of original characters.</li>
+    <li>A warning that free overseas hosting might be unreliable from Shanghai for a WebSocket server.</li>
+    <li>Mounting each driver on a <code>seat</code> point in the kart, so 4 drivers and M karts need only 4 + M models instead of 4 × M.</li>
+    <li>A reminder that the reflection is 50% of the grade, so the record of the process matters as much as the game.</li>
+  </ul>
+</article>
+
+<article id="e-1020">
+  <time>Oct 21 · 10:20</time>
+  <h2>Moving the PRD into English</h2>
+  <p>English is the working language of the course and of the submission, so I asked for an English version. Claude made a separate English document with the diagrams relabelled. From here on, the English PRD is the one that kept changing.</p>
+</article>
+
+<article id="e-1026">
+  <time>Oct 21 · 10:26</time>
+  <h2>Shift 1: no multiplayer, AI opponents instead</h2>
+  <div class="shiftnote"><b>Shift</b>Online multiplayer → single player against three AI opponents. Multiplayer stays as a possible extension.</div>
+  <p>After the first PRD I talked with Prof. Fedtke about the multiplayer idea. There will not be a time when the whole class can play together, so a multiplayer race could never really be shown or tested. We agreed on a single-player game against AI opponents, and I asked Claude to update the PRD.</p>
+  <p>This changed a lot at once. Room codes, the lobby and the server are gone. The three AI drivers take the three drivers I don't pick, so all four leaders are always on the grid. AI karts follow a racing line on each map. The 10-second map vote stays, and the AI drivers vote too.</p>
+  <p>In the same conversation the professor and I settled the likeness question: the leaders appear only in a cartoon style, and their names are not shown. Building on that, I decided <b>the whole game must be cartoon style</b>, not just the drivers. Claude turned this into an art-direction section: toon shading, flat saturated colors with NYU violet, chunky karts, big-headed drivers above the cockpit.</p>
+</article>
+
+<article id="e-1030">
+  <time>Oct 21 · 10:30</time>
+  <h2>The likeness rule, and two kinds of driver images</h2>
+  <p>Prof. Fedtke's answer on likeness: using the leaders' cartoon versions is fine <b>as long as their names are not written in the game</b>. In the game they are only Driver 01–04.</p>
+  <p>I also decided each driver needs two images: a <b>preview</b> in a natural pose for the select screen, and a <b>T-pose</b> for the version that sits in the kart, because that model has to be rigged with a skeleton. Characters first, karts afterwards.</p>
+</article>
+
+<article id="e-1041">
+  <time>Oct 21 · 10:41</time>
+  <h2>Setting up this record</h2>
+  <p>I asked Claude to keep a detailed record in my PoH section in Notion. Claude could not find the page at first, and my link returned "page not found" because the page lived in a different Notion workspace from the connected one. After I re-enabled the connection for the right workspace, it worked.</p>
+</article>
+
+<article id="e-1050a">
+  <time>Oct 21 · 10:50</time>
+  <h2>Shift 2: from a log table to a journal</h2>
+  <div class="shiftnote"><b>Shift</b>The process record changes from a database of log rows to a blog-style journal.</div>
+  <p>Claude's first version of the record was a database: one row per event, with columns for type, tool and outcome. It was not what I wanted. A table splits the story into rows and loses the reasons between them. I want a work journal that tells the whole development story, including my thinking and the moments where the direction changed.</p>
+</article>
+
+<article id="e-1050b">
+  <time>Oct 21 · 10:50</time>
+  <h2>Driver prompts v1, and why there are two</h2>
+  <ul>
+    <li><b>Image-to-3D copies the pose in the picture.</b> Tripo turns one image into one mesh, frozen in that pose, so each pose needs its own source image.</li>
+    <li><b>A natural pose breaks rigging.</b> A hand holding a helmet fuses into the body in 3D. Auto-rigging needs limbs clearly apart from the torso, which is what a T-pose gives.</li>
+    <li><b>The two images need different lighting.</b> The preview should look attractive; the 3D source needs flat light, no shadows and a white background, or shadows get baked into the texture.</li>
+    <li><b>They do different jobs.</b> The preview is the character's poster; the T-pose is a neutral technical reference.</li>
+  </ul>
+  <p>Order: generate the preview from the photo first, then the T-pose with both the photo and the chosen preview attached, so the 3D model matches the preview. Both prompts share the same style and outfit text, unchanged between drivers. The outfit carries no text, names or numbers.</p>
+  <h3>Prompt 1 · Preview (natural pose)</h3>
+<pre><code>Using the attached reference photo, create a chibi cartoon racing driver of this person for a racing game's character select screen.
+
+Style: 3D cartoon character render, chibi proportions (about 2.5 heads tall), big head, small body, soft cel-shaded look with clean bold outlines, smooth simple shapes, saturated flat colors, toy-like and friendly. Keep the person's recognizable features from the reference photo (face shape, hairstyle, skin tone, and glasses if they wear them, drawn with thick simple frames), simplified and cute, never exaggerated or unflattering.
+
+Outfit: racing suit in NYU violet (#57068C) with white side stripes, white gloves, black racing boots. No logos, no text, no names, no numbers anywhere.
+
+Pose: confident, friendly pose in three-quarter view, one hand holding a violet racing helmet at the hip, the other hand giving a small thumbs-up, gentle smile.
+
+Framing: full body, centered, plain light gradient background, soft studio lighting, no props other than the helmet, no text.</code></pre>
+  <h3>Prompt 2 · T-pose (source for Tripo and rigging)</h3>
+<pre><code>Using the attached images — the photo for the person's identity, and the cartoon driver image for the exact style, colors and outfit — create the same chibi cartoon racing driver in a strict T-pose, as a reference image for image-to-3D conversion and rigging.
+
+Style: 3D cartoon character render, chibi proportions (about 2.5 heads tall), big head, small body, soft cel-shaded look with clean bold outlines, smooth simple shapes, saturated flat colors, toy-like and friendly. Keep the person's recognizable features from the reference photo (face shape, hairstyle, skin tone, and glasses if they wear them, drawn with thick simple frames), simplified and cute, never exaggerated or unflattering.
+
+Outfit: racing suit in NYU violet (#57068C) with white side stripes, white gloves, black racing boots. No logos, no text, no names, no numbers anywhere.
+
+Pose: perfectly symmetrical T-pose, front orthographic view, facing the camera directly, arms straight out horizontally at shoulder height, palms facing down, fingers together, simplified hands, a clear gap between the arms and the body, legs straight and slightly apart with a visible gap between them, feet pointing forward, neutral closed-mouth expression.
+
+Framing: full body from head to feet, centered, pure white background, flat even lighting, no shadows, no helmet, no props, no text, nothing overlapping or touching the body.</code></pre>
+</article>
+
+<article id="e-1127">
+  <time>Oct 21 · 11:27</time>
+  <h2>Driver 01: from photo to a rigged 3D model</h2>
+  <p>The first driver went through the whole pipeline within about 40 minutes of finishing the prompts.</p>
+  <div class="gal">
+    <figure><button data-lb><img src="img/1127-01-reference-photo.jpg" alt="Official portrait used as the identity reference"></button><figcaption><b>1 · Reference photo.</b> Official portrait, the identity reference.</figcaption></figure>
+    <figure><button data-lb><img src="img/1127-02-d01-preview.jpg" alt="Chibi driver with helmet and thumbs-up"></button><figcaption><b>2 · Preview (Prompt 1, Image 2).</b> Violet suit, helmet at the hip, thumbs-up.</figcaption></figure>
+    <figure><button data-lb><img src="img/1127-03-d01-tpose.jpg" alt="The same driver in a T-pose on white"></button><figcaption><b>3 · T-pose (Prompt 2, Image 2).</b> Photo and preview attached; same face, suit and boots.</figcaption></figure>
+    <figure><button data-lb><img src="img/1127-04-tripo-from-preview.jpg" alt="Tripo model built from the preview image"></button><figcaption><b>4 · A comparison: 3D from the preview.</b> 1,975,874 faces, pose and helmet frozen into the mesh.</figcaption></figure>
+    <figure><button data-lb><img src="img/1127-05-tripo-from-tpose.jpg" alt="Tripo model built from the T-pose image"></button><figcaption><b>5 · 3D from the T-pose.</b> 96,298 faces, about 20 times lighter; limbs clear of the body.</figcaption></figure>
+    <figure><button data-lb><img src="img/1127-06-tripo-rig.jpg" alt="Tripo rigging panel with a skeleton inside the model"></button><figcaption><b>6 · Rigging inside Tripo.</b> Humanoid, ActorCore preset, 78 bones. "Use a T- or A-pose for best results."</figcaption></figure>
+  </div>
+  <p><b>Cost:</b> one model cost 55 Tripo credits and the rig 20; my balance went from 1,550 to 1,475.</p>
+  <h3>My thinking at this step</h3>
+  <p>Before tools like this, rigging meant opening the model in Blender, placing every bone by hand, and painting how much of the mesh follows each bone. Here it was one click on a preset. My work moved from building the skeleton to deciding which image is good enough to become the model, and preparing that image so the AI can rig it. The T-pose prompt exists only for that reason, and Tripo's own rig panel asks for exactly that.</p>
+  <p class="note">Gap between prompt and output: the prompts asked for a cel-shaded look with bold outlines and flat colors. The images came back with photo-like faces on cartoon bodies and no outlines. Proportions, outfit and colors match.</p>
+</article>
+
+<article id="e-1254">
+  <time>Oct 21 · 12:54</time>
+  <h2>Drivers 02–04, and a second model for each</h2>
+  <p>Driver 02 is the Vice Chancellor, Driver 03 the Provost, Driver 04 the Dean of Arts and Sciences. In the game they appear only as Driver 01–04. For these three I sent both images through Tripo, so each driver also has an unrigged standing model next to the rigged T-pose model.</p>
+  <div class="gal">
+    <figure><button data-lb><img src="img/1254-d02-preview.jpg" alt="Driver 02 preview"></button><figcaption><b>Driver 02 · preview.</b> Thin rectangular glasses kept.</figcaption></figure>
+    <figure><button data-lb><img src="img/1254-d02-tpose.jpg" alt="Driver 02 T-pose"></button><figcaption><b>Driver 02 · T-pose.</b></figcaption></figure>
+    <figure><button data-lb><img src="img/1254-d03-preview.jpg" alt="Driver 03 preview"></button><figcaption><b>Driver 03 · preview.</b> Round glasses; deeper violet background.</figcaption></figure>
+    <figure><button data-lb><img src="img/1254-d03-tpose.jpg" alt="Driver 03 T-pose"></button><figcaption><b>Driver 03 · T-pose.</b></figcaption></figure>
+    <figure><button data-lb><img src="img/1254-d04-preview.jpg" alt="Driver 04 preview"></button><figcaption><b>Driver 04 · preview.</b> Big open smile.</figcaption></figure>
+    <figure><button data-lb><img src="img/1254-d04-tpose.jpg" alt="Driver 04 T-pose"></button><figcaption><b>Driver 04 · T-pose.</b> Landscape framing, unlike the others.</figcaption></figure>
+  </div>
+  <div class="tw"><table>
+    <thead><tr><th>Driver</th><th>Rigged model</th><th>Bones</th><th>Clip from Tripo</th><th>Standing model</th></tr></thead>
+    <tbody>
+      <tr><td>02</td><td class="n">96,502 triangles</td><td class="n">78</td><td>dance_05 (2.9 s)</td><td class="n">98,412 triangles</td></tr>
+      <tr><td>03</td><td class="n">99,698 triangles</td><td class="n">65</td><td>bow (6.0 s)</td><td class="n">99,040 triangles</td></tr>
+      <tr><td>04</td><td class="n">95,970 triangles</td><td class="n">65</td><td>front_kick_02 (1.4 s)</td><td class="n">99,554 triangles</td></tr>
+    </tbody></table></div>
+  <p>Two skeleton presets ended up in use: 78 bones (Drivers 01, 02, ActorCore names) and 65 bones (Drivers 03, 04, Mixamo names). The game later handles both by finding bones by the end of their names. At 13:02 I also asked Claude to fix the asset viewer page, which cut off images at some screen sizes.</p>
+</article>
+
+<article id="e-1310">
+  <time>Oct 21 · 13:10</time>
+  <h2>Tracks: three maps from Sketchfab</h2>
+  <p>Instead of the Kenney and SuperTuxKart tracks named in the PRD, I downloaded three kart tracks from Sketchfab, all by the same uploader, all CC BY 4.0 (credit required).</p>
+  <div class="tw"><table>
+    <thead><tr><th>File</th><th>Sketchfab description</th><th>Author</th><th>License</th><th>Triangles</th></tr></thead>
+    <tbody>
+      <tr><td><a href="https://sketchfab.com/3d-models/map-qms-d41c14ae6ee342869732459bb5e0c9dd">Map_qms</a></td><td>"race track"</td><td><a href="https://sketchfab.com/amogusstrikesback2">amogusstrikesback2</a></td><td>CC BY 4.0</td><td class="n">90,978</td></tr>
+      <tr><td><a href="https://sketchfab.com/3d-models/map-tkgcz-1345754bb8ea4b69860c10edda1a4d3d">Map_tkgcz</a></td><td>(page did not load)</td><td><a href="https://sketchfab.com/amogusstrikesback2">amogusstrikesback2</a></td><td>CC BY 4.0</td><td class="n">133,768</td></tr>
+      <tr><td><a href="https://sketchfab.com/3d-models/map-njxz-780bfdf4195e4337bec208b7ef2736d0">Map_njxz</a></td><td>"purple flower fields"</td><td><a href="https://sketchfab.com/amogusstrikesback2">amogusstrikesback2</a></td><td>CC BY 4.0</td><td class="n">124,069</td></tr>
+    </tbody></table></div>
+  <h3>A question these maps raise</h3>
+  <p>The drivers are AI-generated and the tracks are human-made assets from the internet, so the game mixes two kinds of borrowed material. Inside the files, parts have pinyin-style names (for example <code>map_daoju_02</code>, where "daoju" reads like 道具, "item") and a built-in minimap mesh, a pattern common in levels extracted from an existing commercial kart game. The uploader labels them CC BY, but the pages do not say the uploader made them. I have not confirmed either way. This connects to the assignment's question of who owns the content: for Image 2 and Tripo it depends on the tools' terms; for these maps, on whether a free label on the internet can be trusted.</p>
+</article>
+
+<article id="e-1320">
+  <time>Oct 21 · 13:20</time>
+  <h2>Kart prompts v1</h2>
+  <p>The karts have to work with the drivers: the same look (one driver preview attached as style reference), room for a big-headed driver in a low open cockpit, and no driver drawn in the image, or Tripo would fuse driver and kart into one mesh. One prompt per kart is enough because karts are never rigged; only the wheels move.</p>
+<pre><code>Style: 3D cartoon render matching the attached driver image exactly, toy-like and friendly, soft cel-shaded look, smooth simple shapes, saturated flat colors, chunky proportions, short wheelbase, oversized rounded wheels.
+Colors: NYU violet (#57068C) as the main body color with white racing stripes and black tires; small accents allowed in the color named below.
+Seat: one open cockpit with a single empty bucket seat and a small steering wheel, sized for the attached chibi driver (about 2.5 heads tall) so the driver's big head and shoulders would sit clearly above the bodywork. Low sides, no roof, no windshield over the seat.
+Rules: no driver, no person, no helmet, no logos, no text, no numbers, no flags or sponsor decals anywhere.
+Framing: the whole kart in view including all four wheels, three-quarter front view from slightly above, centered, pure white background, flat even lighting, no shadows, no ground plane, nothing touching or overlapping the kart.</code></pre>
+<pre><code>Kart 1 — Classic: ... classic go-kart: open tube frame, flat floor pan, rounded front nose bumper, side pods, small rear engine block. Accent color: white.
+Kart 2 — Bubble roadster: ... rounded retro roadster kart: smooth bubble-shaped body, round headlights, short rear tail with two exhaust pipes. Accent color: gold.
+Kart 3 — Off-road buggy: ... chunky knobby tires, visible springy suspension, a low roll bar behind the seat that stays below the driver's head, front skid plate. Accent color: lime green.
+Kart 4 — Futuristic racer: ... pointed nose, small front wing, rounded rear wing, glowing strip along the sides. Accent color: cyan.
+(each starts with "Using the attached driver image as the style reference, create ..." and ends with the shared block)</code></pre>
+</article>
+
+<article id="e-1340">
+  <time>Oct 21 · 13:40</time>
+  <h2>Kart 1, and splitting it into parts</h2>
+  <p>Image-to-3D gives one solid mesh, but in a racing game the wheels must turn and the front wheels must steer. Tripo's Segment tool splits the kart into parts. It offers Simple (3–6 parts), Balanced (6–15) and Detailed (15+); I kept the Detailed result. Segmenting cost 40 credits (930 → 890). I identified the wheels myself: left front part 6, right front part 2, left rear part 8, right rear part 10.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1340-k1-segment-levels.jpg" alt="Tripo segmentation detail levels while segmenting"></button><figcaption><b>Segment levels.</b> Simple, Balanced, Detailed.</figcaption></figure>
+    <figure><button data-lb><img src="img/1340-k1-tripo.jpg" alt="Kart 1 model in Tripo"></button><figcaption><b>Kart 1 in Tripo.</b> HD Model, 90,995 faces.</figcaption></figure>
+    <figure><button data-lb><img src="img/1340-k1-segment.jpg" alt="Kart 1 split into colored parts"></button><figcaption><b>After Smart Segment.</b> Each wheel its own part.</figcaption></figure>
+    <figure><button data-lb><img src="img/1340-k1-segment-front.jpg" alt="Front view of the segmented kart"></button><figcaption><b>Front view of the parts.</b></figcaption></figure>
+  </div>
+  <p>Claude checked the labels against the file and noticed that the bounding boxes written in Tripo files disagree with the real vertices. That note turned out to matter three days later (see 20:24).</p>
+</article>
+
+<article id="e-1810">
+  <time>Oct 24 · 18:10</time>
+  <h2>Kart 2, and the steering wheels</h2>
+  <p>I labelled Kart 2's wheels (left front 63, right front 79, left rear 78, right rear 24) and the steering wheels of both karts (Kart 1: part 41; Kart 2: part 3). Claude plotted each part's points from the files. My labels pointed at the right places, but two things only showed up in the files:</p>
+  <ul>
+    <li><b>Kart 1's steering wheel is in six pieces.</b> Part 41 is only the hub and spokes; the rim is parts 22, 42, 43, 64 and 71. In Tripo's preview it looked like one part.</li>
+    <li><b>Kart 2's two right wheel parts carry extra pieces.</b> Part 79 also holds the fender arch; part 24 holds a piece of bodywork. The left wheels are clean.</li>
+  </ul>
+  <div class="gal one">
+    <figure><button data-lb><img src="img/1810-k1-steering-parts.png" alt="Point plot of Kart 1 steering wheel parts"></button><figcaption><b>Kart 1 steering wheel, checked from the file.</b> Part 41 (blue) is the hub; the rim is five more parts.</figcaption></figure>
+    <figure><button data-lb><img src="img/1810-k2-right-wheel-parts.png" alt="Point plot of Kart 2 right side parts"></button><figcaption><b>Kart 2 right side.</b> Part 79 (blue) includes the fender; part 24 (orange) includes bodywork.</figcaption></figure>
+  </div>
+  <p>The segmentation looks right in Tripo's preview, and I labelled it correctly by eye, yet the file the code gets is different. The AI's split is a guess about where one object ends and another begins, and on the right side of Kart 2 it guessed differently from the left.</p>
+</article>
+
+<article id="e-1822">
+  <time>Oct 24 · 18:22</time>
+  <h2>Decision: keep Kart 2's right wheels as they are</h2>
+  <p>I decided not to re-split them: from the third-person camera behind the kart, I did not expect to see the extra pieces turning. Claude noted the fallback (stop spinning those two parts) in case it showed. This decision was reversed two hours later, after I saw the wheels in the game.</p>
+</article>
+
+<article id="e-1847">
+  <time>Oct 24 · 18:47</time>
+  <h2>Kart 3, and the Kart 4 image</h2>
+  <p>Kart 3 (the buggy): left front part 1, right front 5, left rear 4, right rear 3, all correct. Claude found the steering wheel in the file: part 9 plus a cap, part 29. Kart 3 is much bigger than Karts 1–2 (0.86 wide, 0.50 tall), so the game needs one common kart size. I also sent the Kart 4 source image, and a standing model of Driver 01 that turned out to be 68 MB with 1,975,874 triangles, about 20 times heavier than the others, so it was left out of the game.</p>
+  <div class="gal">
+    <figure><button data-lb><img src="img/1847-k3-source.jpg" alt="Kart 3 source image"></button><figcaption><b>Kart 3 · source image.</b> Knobby tires, springs, roll bar.</figcaption></figure>
+    <figure><button data-lb><img src="img/1847-k3-tripo.jpg" alt="Kart 3 in Tripo"></button><figcaption><b>Kart 3 in Tripo.</b> 98,042 faces.</figcaption></figure>
+    <figure><button data-lb><img src="img/1847-k3-steering-parts.png" alt="Kart 3 steering parts"></button><figcaption><b>Kart 3 steering wheel.</b> Part 9 plus the cap, part 29.</figcaption></figure>
+    <figure><button data-lb><img src="img/1847-k4-source.jpg" alt="Kart 4 source image"></button><figcaption><b>Kart 4 · source image.</b> Wings and cyan light strips.</figcaption></figure>
+  </div>
+</article>
+
+<article id="e-1908">
+  <time>Oct 24 · 19:08</time>
+  <h2>Shift 3: Kart 4, and the first full build</h2>
+  <div class="shiftnote"><b>Shift</b>Two of the three tracks become one-way sprints instead of 3-lap loops, because the files themselves are open courses.</div>
+  <p>Kart 4 was done (left front 4, right front 3, left rear 19, right rear 41, steering wheel 15) and I asked Claude to build the complete game. Checking the file, two of my labels pointed elsewhere: part 3 is a side panel and part 41 a small piece at the back. The real right wheels are parts 1 and 31, probably renumbered when I merged parts in Tripo.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1908-k4-tripo.jpg" alt="Kart 4 in Tripo"></button><figcaption><b>Kart 4 in Tripo.</b> 93,041 faces.</figcaption></figure>
+    <figure><button data-lb><img src="img/1908-k4-segment.jpg" alt="Kart 4 segmented, balanced level"></button><figcaption><b>Kart 4 segmented.</b> Smart Segment, Balanced.</figcaption></figure>
+  </div>
+  <div class="gal one">
+    <figure><button data-lb><img src="img/1908-k4-part-check.png" alt="Kart 4 part check plot"></button><figcaption><b>Checking Kart 4's labels.</b> Parts 4, 19 and 15 match; part 3 (orange) and part 41 (red) are not wheels.</figcaption></figure>
+  </div>
+  <h3>What Claude did to make it run in a browser</h3>
+  <ul>
+    <li><b>Shrank the assets</b> from about 110 MB to 34 MB: smaller textures, no normal or metal maps (toon shading does not need them), compressed vertex data. A race loads about 24 MB.</li>
+    <li><b>Computed a racing line for each track</b> from the road meshes and the built-in minimap ribbons. Map_tkgcz's ribbon has two ends and its last part climbs a spiral to a deck above the start; Map_qms is a long downhill course. So they became sprints (Sky Plaza Climb, Mountain Run), and Map_njxz stayed a 3-lap loop (Flower Loop). The names are new, chosen from the Sketchfab descriptions.</li>
+    <li><b>Found each kart's seat</b> from side slices of the models, and posed the T-pose drivers into a seated position in code.</li>
+  </ul>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1908-maps-from-above.png" alt="Minimap ribbons and road meshes from above"></button><figcaption><b>The three maps from above.</b> Top: built-in minimap ribbons. Bottom: road meshes colored by height.</figcaption></figure>
+    <figure><button data-lb><img src="img/1908-racing-lines.png" alt="Computed racing lines and height profiles"></button><figcaption><b>Computed racing lines.</b> Green dot is the start; below, the height along each line.</figcaption></figure>
+    <figure><button data-lb><img src="img/1908-kart-side-slices.png" alt="Side slices of the four karts"></button><figcaption><b>Side slices of the karts</b>, used to find the seat height behind each steering wheel (purple).</figcaption></figure>
+    <figure><button data-lb><img src="img/1908-first-build-race.jpg" alt="First build, race on the sky track"></button><figcaption><b>First build, Sky Plaza Climb.</b> Four karts with seated drivers, HUD and minimap.</figcaption></figure>
+  </div>
+  <p>Claude could not playtest this build itself at first: the browser on my computer was not signed in to Claude, and its own workspace could not download three.js.</p>
+</article>
+
+<article id="e-2024">
+  <time>Oct 24 · 20:24</time>
+  <h2>Shift 4: playtest feedback, and the fixes</h2>
+  <div class="shiftnote"><b>Shift</b>The 18:22 decision is reversed: Kart 2's mixed wheel parts are now split in code. The vote screen shows real renders of the maps instead of drawn outlines.</div>
+  <p>I played the first build and reported three problems:</p>
+  <ol>
+    <li><b>The wheels orbited an empty point</b> instead of turning around their axles.</li>
+    <li><b>On the space map the karts did not stick to the road.</b></li>
+    <li><b>The map vote showed a drawn outline of the road</b>, not what the map looks like.</li>
+  </ol>
+  <h3>1 · Wheels</h3>
+  <p>The cause was the same thing noticed at 13:40: the bounding boxes saved in Tripo files are wrong, and three.js uses them to find a mesh's center. Claude measured every wheel center from the actual vertices and wrote them into the game. For Kart 2's right side it fitted a circle to the tire; those wheels turned out not to be mirror images of the left ones, and the game now spins only the triangles inside the tire's circle, leaving the fender on the body.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/2024-wheel-spin-test.png" alt="Four karts at four spin angles with colored wheels"></button><figcaption><b>Spin test.</b> All four karts, wheels colored, four spin angles: the wheels stay in place.</figcaption></figure>
+    <figure><button data-lb><img src="img/2024-k2-wheel-split-test.png" alt="Kart 2 right wheels at four angles"></button><figcaption><b>Kart 2 right side after the split</b>, four angles.</figcaption></figure>
+    <figure><button data-lb><img src="img/2024-asset-page-k2-k4-spin.png" alt="Asset page kart viewer, Kart 2 and Kart 4 spinning"></button><figcaption><b>Asset viewer, Karts 2 and 4 spinning</b>, two moments each.</figcaption></figure>
+  </div>
+  <h3>2 · Sticking to the road</h3>
+  <p>The sky track has a stretch where the road mesh simply stops and resumes higher up (probably a jump pad in the original game), so the karts fell. Now karts follow the real road surface, and where the mesh has a gap they follow the racing line's height. In simulated races all four karts stayed on the road and finished on every track: Sky Plaza Climb in about 30 seconds, Flower Loop's 3 laps in about 92, Mountain Run in about 70.</p>
+  <h3>3 · Map previews</h3>
+  <p>The vote cards now show aerial renders of the actual maps, made with the same engine as the game.</p>
+  <div class="gal">
+    <figure><button data-lb><img src="img/2024-vote-flower-loop.jpg" alt="Flower Loop aerial render"></button><figcaption><b>Flower Loop</b> (Map_njxz).</figcaption></figure>
+    <figure><button data-lb><img src="img/2024-vote-sky-plaza.jpg" alt="Sky Plaza Climb aerial render"></button><figcaption><b>Sky Plaza Climb</b> (Map_tkgcz).</figcaption></figure>
+    <figure><button data-lb><img src="img/2024-vote-mountain-run.jpg" alt="Mountain Run aerial render"></button><figcaption><b>Mountain Run</b> (Map_qms).</figcaption></figure>
+  </div>
+  <h3>Testing, and other changes</h3>
+  <p>This time Claude found a way to test on its own: it downloaded three.js through git and ran the game in a local browser, checking every screen at desktop and phone width and simulating whole races. Along the way: karts are drawn 1.35× bigger, the camera sits further back, the player starts from the back of the grid so no kart blocks the view, the AI takes corners faster, and the select screen's 3D preview is no longer hidden behind the panel.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/2024-drivers-seated.jpg" alt="Four drivers seated in four karts from two angles"></button><figcaption><b>Seated drivers.</b> Each driver in a kart, from the front three-quarter and the side.</figcaption></figure>
+    <figure><button data-lb><img src="img/2024-game-flow-desktop.jpg" alt="Title, select, vote and race screens on desktop"></button><figcaption><b>Full flow, desktop:</b> title, select, vote, race start.</figcaption></figure>
+    <figure><button data-lb><img src="img/2024-game-flow-phone.jpg" alt="The same screens at phone width"></button><figcaption><b>Same flow at phone width.</b></figcaption></figure>
+  </div>
+</article>
+
+<article id="e-2116">
+  <time>Oct 24 · 21:16</time>
+  <h2>Shift 5: from Notion to this website</h2>
+  <div class="shiftnote"><b>Shift</b>The journal moves from Notion to a website with two parts: documentation and the playable game, ready for GitHub Pages.</div>
+  <p>The Notion connection kept pointing at a different workspace, so the entries after Oct 21 could not be written there, and images could not be uploaded from Claude's side at all. I asked for one website instead: this documentation page, with every screenshot from the process, and the game itself, both deployable to GitHub Pages.</p>
+</article>
+
+<article id="links">
+  <time>Reference</time>
+  <h2>Links and credits</h2>
+  <ul>
+    <li><a href="../play/index.html">Play the game</a></li>
+    <li>Working documents (Claude artifacts, private until shared): <a href="https://claude.ai/artifact/DMKM3fMPekCA11MkLqh5dL">PRD (English)</a>, <a href="https://claude.ai/artifact/AaKmRsamw2nWti6A5B9stp">PRD (Chinese, older plan)</a>, <a href="https://claude.ai/artifact/17nccmR659oURAh2YL81Qg">Racing Game Assets viewer</a></li>
+    <li>Tracks by <a href="https://sketchfab.com/amogusstrikesback2">amogusstrikesback2</a> on Sketchfab, <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>; rescaled and compressed for the game.</li>
+    <li>Drivers and karts: Image 2 and Tripo AI. Engine: three.js (MIT). Code and much of this write-up were drafted with Claude and checked by me.</li>
+  </ul>
+  <p class="foot">Last updated Oct 24, 2026.</p>
+</article>
+</main>
+</div>
+
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Image"><button type="button" id="lbClose">Close</button><div><img id="lbImg" alt=""><p id="lbCap"></p></div></div>
+<script>
+(function(){
+  const lb=document.getElementById('lb'), im=document.getElementById('lbImg'), cap=document.getElementById('lbCap'); let last=null;
+  document.querySelectorAll('[data-lb]').forEach(b=>b.addEventListener('click',()=>{ const i=b.querySelector('img'); im.src=i.src; im.alt=i.alt; const fc=b.closest('figure').querySelector('figcaption'); cap.textContent=fc?fc.textContent:''; last=b; lb.hidden=false; document.getElementById('lbClose').focus(); }));
+  function close(){ lb.hidden=true; im.src=''; if(last)last.focus(); }
+  document.getElementById('lbClose').onclick=close; lb.addEventListener('click',e=>{ if(e.target===lb)close(); });
+  addEventListener('keydown',e=>{ if(e.key==='Escape'&&!lb.hidden)close(); });
+})();
+</script>
+</body>
+</html>
