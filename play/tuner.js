@@ -4,9 +4,9 @@
 (function(){
 'use strict';
 const gp=window.__gp; if(!gp||!gp.tune)return;
-const {CAM,PHYS,GRID,KART,TUNE}=gp.tune;
+const {CAM,PHYS,GRID,KART,TUNE,DRIFT,SPEED}=gp.tune;
 const STORE_KEY='gp-tune-v1';
-const GROUPS={CAM,PHYS,GRID,KART};
+const GROUPS={CAM,PHYS,GRID,KART,DRIFT,SPEED};
 
 // [group, key, label, min, max, step, hint]
 const SECTIONS=[
@@ -19,6 +19,24 @@ const SECTIONS=[
     ['CAM','fovBoost','Extra FOV at speed',0,35,1,'°'],
     ['CAM','yawRate','Turn follow (low = more swing)',1,25,0.5,''],
     ['CAM','posRate','Height follow',2,30,0.5,''],
+    ['CAM','driftLook','Show drift angle',0,1,0.05,''],
+  ]],
+  ['Speed',[
+    ['SPEED','player','Your top speed',0.4,1.5,0.05,'×'],
+    ['SPEED','ai','Opponents\' speed',0.4,1.5,0.05,'×'],
+  ]],
+  ['Drift',[
+    ['DRIFT','auto','Auto drift (no key)',0,1,1,'onoff'],
+    ['DRIFT','bias','Drift turn rate',0.3,3,0.05,'rad/s'],
+    ['DRIFT','steer','Steering in drift',0,2.5,0.05,'rad/s'],
+    ['DRIFT','grip','Slide grip (low = longer slide)',0.5,8,0.1,'/s'],
+    ['DRIFT','maxAngle','Max slide angle',0.2,1.4,0.05,'rad'],
+    ['DRIFT','drag','Speed lost while drifting',0,10,0.25,'m/s²'],
+    ['DRIFT','minSpeed','Min speed to drift',2,20,0.5,'m/s'],
+    ['DRIFT','chargeTime','Time to charge boost',0.2,2,0.05,'s'],
+    ['DRIFT','boostPower','Boost strength',0,0.8,0.05,'×'],
+    ['DRIFT','boostTime','Boost length',0.2,2.5,0.05,'s'],
+    ['DRIFT','aiCurve','AI drifts on corners sharper than',0.2,1.5,0.05,'rad'],
   ]],
   ['Starting grid',[
     ['GRID','playerSlot','Your slot',0,3,1,'slot'],
@@ -93,6 +111,7 @@ document.body.append(btn,panel);
 
 function fmt(g,k,v,unit,step){
   if(g==='GRID'&&k==='playerSlot')return SLOT_NAMES[v];
+  if(unit==='onoff')return v?'On':'Off';
   const dec=(String(step).split('.')[1]||'').length; return (+v).toFixed(dec)+(unit?' '+unit:'');
 }
 let noteEl=null, noteT=0;
@@ -127,7 +146,7 @@ function render(){
   noteEl=document.createElement('p'); noteEl.className='note'; noteEl.setAttribute('role','status'); panel.appendChild(noteEl);
 }
 function copySettings(){
-  const json=JSON.stringify({CAM:pick('CAM'),GRID:pick('GRID'),KART:pick('KART'),PHYS:pick('PHYS')},null,1);
+  const json=JSON.stringify({CAM:pick('CAM'),SPEED:pick('SPEED'),DRIFT:pick('DRIFT'),GRID:pick('GRID'),KART:pick('KART'),PHYS:pick('PHYS')},null,1);
   const fallback=()=>{ let ta=panel.querySelector('textarea'); if(!ta){ ta=document.createElement('textarea'); ta.readOnly=true; panel.appendChild(ta); }
     ta.value=json; ta.focus(); ta.select(); note('Select all and copy the text below.'); };
   if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(json).then(()=>note('Copied. Paste it to Claude to make these the defaults.'),fallback);

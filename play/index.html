@@ -89,6 +89,10 @@ kbd{font:800 13px/1 var(--display);background:var(--panel-2);border:2px solid va
 #mini{width:180px;height:180px;border-radius:16px;background:rgba(23,11,38,.7);border:2px solid var(--violet-2)}
 .speed{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:max(16px,env(safe-area-inset-bottom,0px));font:800 44px/1 var(--display);text-align:right;font-variant-numeric:tabular-nums;-webkit-text-stroke:2px var(--violet);paint-order:stroke fill}
 .speed small{display:block;font-size:14px;color:var(--muted);-webkit-text-stroke:0}
+.drift{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(max(16px,env(safe-area-inset-bottom,0px)) + 70px);width:150px;height:22px;
+  border-radius:11px;background:rgba(23,11,38,.78);border:2px solid var(--violet-2);overflow:hidden}
+.drift i{position:absolute;inset:0 auto 0 0;width:0;background:var(--cyan)} .drift.l2 i{background:var(--gold)}
+.drift span{position:relative;display:block;text-align:center;font:800 13px/18px var(--display);color:var(--ink)}
 .big{position:absolute;inset:0;display:grid;place-items:center;font:800 clamp(90px,20vw,220px)/1 var(--display);color:var(--gold);-webkit-text-stroke:5px var(--violet);paint-order:stroke fill;text-shadow:0 8px 0 var(--violet)}
 .toast{position:absolute;left:50%;top:22%;transform:translateX(-50%);font:800 28px/1 var(--display);background:rgba(23,11,38,.85);border:3px solid var(--rose);border-radius:16px;padding:12px 18px 8px;white-space:nowrap}
 .hint{position:absolute;left:50%;bottom:max(16px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);color:var(--muted);font-size:14px;background:rgba(23,11,38,.6);padding:6px 12px;border-radius:10px;max-width:calc(100% - 32px);text-align:center}
@@ -122,7 +126,7 @@ tr.me td{color:var(--lime)}
     <div class="seg" role="group" aria-label="Shading"><button id="toonOn" aria-pressed="true">Cartoon</button><button id="toonOff" aria-pressed="false">As exported</button></div>
   </div>
   <div class="row"><button class="btn" id="bPlay">Play</button><button class="btn ghost" id="bCredits">Credits</button><a class="btn ghost" href="../docs/index.html" style="text-decoration:none">Documentation</a></div>
-  <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys to drive · <kbd>R</kbd> back on track · <kbd>Esc</kbd> pause · <kbd>M</kbd> sound</p>
+  <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys to drive · hold <kbd>Shift</kbd> or <kbd>Space</kbd> while turning to drift · <kbd>R</kbd> back on track · <kbd>Esc</kbd> pause · <kbd>M</kbd> sound</p>
   <p class="keys" id="touchNote" hidden>This game needs a keyboard.</p>
 </section>
 
@@ -157,9 +161,10 @@ tr.me td{color:var(--lime)}
   <div class="hudtl"><div class="pos" id="hPos">1<sup>st</sup></div><div class="pill" id="hLap">Lap 1/3</div><div class="pill" id="hTime">0:00.0</div></div>
   <div class="hudtr"><canvas id="mini" width="360" height="360"></canvas></div>
   <div class="speed" id="hSpeed">0<small>km/h (cartoon scale)</small></div>
+  <div class="drift" id="hDrift" hidden><i id="hDriftBar"></i><span id="hDriftTxt">Drift</span></div>
   <div class="big" id="hBig" hidden>3</div>
   <div class="toast" id="hToast" hidden>Wrong way</div>
-  <div class="hint" id="hHint">W/↑ go · S/↓ brake · A D / ← → steer · R reset · Esc pause</div>
+  <div class="hint" id="hHint">W/↑ go · S/↓ brake · A D / ← → steer · Shift/Space drift · R reset · Esc pause</div>
 </div>
 
 <section class="screen dim" id="sPause" hidden>
@@ -226,7 +231,16 @@ const PHYS={dt:1/120,restitution:0.35,friction:0.25,knockGrip:4,yawDamp:5,maxYaw
 // a wall swings parallel to it (karts only turn while moving, so without this a kart nosed into a wall stays pinned).
 // Chase camera (Mario Kart style): distance behind, height, look-ahead point, base FOV, extra FOV at top speed,
 // how fast the view swings round after the kart turns, and how fast it follows height changes.
-const CAM={back:1.2,up:0.7,lookAhead:2.2,lookUp:0.3,fov:69,fovBoost:12,fovSpeed:30,yawRate:7,posRate:12};
+const CAM={back:1.2,up:0.7,lookAhead:2.2,lookUp:0.3,fov:69,fovBoost:12,fovSpeed:30,yawRate:7,posRate:12,driftLook:0.35};
+// Drift (KartRider style): hold Shift or Space while steering. The kart body swings into the corner while its direction
+// of travel lags behind, so it slides sideways. bias/steer: body turn rate in a drift (steering into the corner tightens
+// it, counter-steering opens it); grip/normalGrip: how fast travel catches up with the body; maxAngle: largest slide angle;
+// drag: speed lost per second while sliding. Holding a drift for chargeTime (level 1) or twice that (level 2) gives a
+// mini-turbo on release. auto: drift starts by itself when steering hard at speed.
+const DRIFT={minSpeed:8,minSteer:0.3,bias:1.3,steer:1.0,grip:2.2,normalGrip:14,maxAngle:0.75,drag:2.5,
+  chargeTime:0.7,boostTime:0.8,boostPower:0.3,boostKick:3,auto:0,autoSteer:0.8,autoSpeed:14,aiCurve:0.55};
+// Speed multipliers on top of each kart's stats: the player, and the AI opponents.
+const SPEED={player:1,ai:0.9};
 const DIFF=[{name:'Easy',top:0.80,band:0.10},{name:'Normal',top:0.92,band:0.06},{name:'Hard',top:1.0,band:0.03}];
 const state={diff:1,toon:true,driver:0,kart:0,track:null,sound:true};
 let TRACKS=null;
@@ -384,7 +398,7 @@ function idxDelta(G,a,b){ let d=b-a; if(G.closed){ if(d>G.n/2)d-=G.n; if(d<-G.n/
 
 function makeRacer(i,driverId,kartIdx,isPlayer,kartObj){
   return {i,driverId,kartIdx,isPlayer,ko:kartObj,pos:V(),heading:0,speed:0,vy:0,steer:0,idx:0,prog:0,lap:0,finished:false,finishTime:0,
-    off:0,out:0,stuck:0,reverse:0,lane:0,kvx:0,kvz:0,yaw:0,hull:hullOf(KARTS[kartIdx]),phase:Math.random()*6.28,up:V(0,1,0),grounded:true,wrong:0};
+    off:0,out:0,stuck:0,reverse:0,lane:0,kvx:0,kvz:0,yaw:0,travel:0,drifting:false,driftDir:0,driftT:0,boost:0,hull:hullOf(KARTS[kartIdx]),phase:Math.random()*6.28,up:V(0,1,0),grounded:true,wrong:0};
 }
 function placeOnGrid(r,slot){
   const G=race.G, back=GRID.front+(slot>>1)*GRID.rowGap, side=slot%2?-1:1;
@@ -392,11 +406,11 @@ function placeOnGrid(r,slot){
   const stepLen=G.P[1].distanceTo(G.P[0])||1; const k=Math.round(back/stepLen);
   let i=i0-k; if(G.closed)i=(i+G.n)%G.n; else i=Math.max(0,i);
   const p=G.P[i], t=G.TAN[i]; const w=G.HW[i]*GRID.sideFrac*side;
-  r.pos.set(p.x+t.z*w,p.y+0.6,p.z-t.x*w); r.heading=Math.atan2(t.x,t.z); r.idx=i; r.prog=G.closed?-k:i; r.speed=0; r.vy=0; r.kvx=r.kvz=r.yaw=0;
+  r.pos.set(p.x+t.z*w,p.y+0.6,p.z-t.x*w); r.heading=Math.atan2(t.x,t.z); r.idx=i; r.prog=G.closed?-k:i; r.speed=0; r.vy=0; r.kvx=r.kvz=r.yaw=0; r.travel=r.heading; r.drifting=false; r.boost=0;
 }
 function resetRacer(r){
   const G=race.G; const i=r.idx; const p=G.P[i],t=G.TAN[i];
-  r.pos.set(p.x,p.y+0.3,p.z); r.heading=Math.atan2(t.x,t.z); r.speed=0; r.vy=0; r.off=0; r.out=0; r.stuck=0; r.reverse=0; r.kvx=r.kvz=r.yaw=0;
+  r.pos.set(p.x,p.y+0.3,p.z); r.heading=Math.atan2(t.x,t.z); r.speed=0; r.vy=0; r.off=0; r.out=0; r.stuck=0; r.reverse=0; r.kvx=r.kvz=r.yaw=0; r.travel=r.heading; r.drifting=false; r.boost=0;
   if(r.isPlayer)toast('Back on track',1.2);
 }
 function groundAt(pos,exp){
@@ -412,7 +426,8 @@ function lineHeight(G,i,pos){
 }
 function stepRacer(r,dt,input,t){
   const G=race.G, k=KARTS[r.kartIdx].stats;
-  const top=(18+k.speed*2.6)*(r.isPlayer?1:DIFF[state.diff].top*r.band), acc=9+k.accel*2.4;
+  const boost=r.boost>0?1+DRIFT.boostPower:1;
+  const top=(18+k.speed*2.6)*(r.isPlayer?SPEED.player:DIFF[state.diff].top*r.band*SPEED.ai)*boost, acc=(9+k.accel*2.4)*boost;
   r.idx=nearestIndex(G,r.pos,r.idx,14);
   const lat=lateral(G,r.idx,r.pos), hw=G.HW[r.idx];
   const offroad=Math.abs(lat)>hw*1.05; const way=Math.abs(lat)>hw*2.2;
@@ -425,9 +440,17 @@ function stepRacer(r,dt,input,t){
   if(r.speed>maxS) r.speed=Math.max(maxS,r.speed-20*dt);
   r.speed=Math.max(-6,Math.min(r.speed,top*1.05));
   r.steer+= (steer-r.steer)*Math.min(1,dt*10);
-  const turnRate=(1.9+k.grip*0.12)*(1-0.35*Math.min(1,Math.abs(r.speed)/top));
-  r.heading+=r.steer*turnRate*Math.max(-1,Math.min(1,r.speed/6))*dt;
-  r.pos.x+=Math.sin(r.heading)*r.speed*dt; r.pos.z+=Math.cos(r.heading)*r.speed*dt;
+  updateDrift(r,input,dt);
+  if(r.drifting){ const d=r.driftDir;
+    r.heading+=(DRIFT.bias+r.steer*d*DRIFT.steer)*d*Math.min(1,r.speed/10)*dt; r.driftT+=dt; r.speed-=DRIFT.drag*dt; }
+  else { const turnRate=(1.9+k.grip*0.12)*(1-0.35*Math.min(1,Math.abs(r.speed)/top));
+    r.heading+=r.steer*turnRate*Math.max(-1,Math.min(1,r.speed/6))*dt; }
+  // the direction of travel follows the body: slowly while drifting (the slide), almost at once otherwise
+  const slip=wrapAngle(r.heading-r.travel);
+  r.travel+=slip*Math.min(1,(r.drifting?DRIFT.grip:DRIFT.normalGrip)*dt);
+  if(Math.abs(wrapAngle(r.heading-r.travel))>DRIFT.maxAngle) r.travel=r.heading-Math.sign(slip)*DRIFT.maxAngle;
+  if(r.boost>0) r.boost-=dt;
+  r.pos.x+=Math.sin(r.travel)*r.speed*dt; r.pos.z+=Math.cos(r.travel)*r.speed*dt;
   // sideways knock and spin from collisions, bled off by tire grip
   r.pos.x+=r.kvx*dt; r.pos.z+=r.kvz*dt; r.heading+=r.yaw*dt;
   const kd=Math.exp(-PHYS.knockGrip*dt); r.kvx*=kd; r.kvz*=kd; r.yaw*=Math.exp(-PHYS.yawDamp*dt);
@@ -449,6 +472,19 @@ function stepRacer(r,dt,input,t){
   if(r.out>1.6) resetRacer(r);
   if(race.go&&!r.finished&&!r.isPlayer){ if(Math.abs(r.speed)<1.2){r.stuck+=dt; if(r.stuck>1.5&&r.reverse<=0)r.reverse=0.9; if(r.stuck>4)resetRacer(r);} else r.stuck=0; }
 }
+const wrapAngle=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
+function updateDrift(r,input,dt){
+  const want=race.go&&(input.drift||(r.isPlayer&&DRIFT.auto&&Math.abs(input.steer)>=DRIFT.autoSteer&&r.speed>DRIFT.autoSpeed));
+  if(!r.drifting){
+    if(want&&Math.abs(r.steer)>DRIFT.minSteer&&r.speed>DRIFT.minSpeed){ r.drifting=true; r.driftDir=Math.sign(r.steer); r.driftT=0; }
+    return; }
+  if(want&&r.speed>DRIFT.minSpeed*0.7)return;
+  // release: a mini-turbo if the drift was held long enough
+  r.drifting=false;
+  const level=r.driftT>=DRIFT.chargeTime*2?2:(r.driftT>=DRIFT.chargeTime?1:0);
+  if(level){ r.boost=DRIFT.boostTime*(level===2?1.6:1); r.speed+=DRIFT.boostKick*level; if(r.isPlayer)beep(level===2?1100:800,0.12); }
+}
+function driftLevel(r){ return !r.drifting?0:(r.driftT>=DRIFT.chargeTime*2?2:(r.driftT>=DRIFT.chargeTime?1:0)); }
 function aiInput(r,dt,t){
   const G=race.G, n=G.n;
   if(r.reverse>0){r.reverse-=dt; return {throttle:-1,steer:-Math.sign(lateral(G,r.idx,r.pos))};}
@@ -456,17 +492,21 @@ function aiInput(r,dt,t){
   let ti=r.idx+look; ti=G.closed?ti%n:Math.min(n-1,ti);
   const p=G.P[ti], tt=G.TAN[ti], lane=(r.lane+0.18*Math.sin(t*0.4+r.phase))*G.HW[ti];
   const tx=p.x+tt.z*lane, tz=p.z-tt.x*lane;
-  const want=Math.atan2(tx-r.pos.x,tz-r.pos.z); let da=want-r.heading; while(da>Math.PI)da-=2*Math.PI; while(da<-Math.PI)da+=2*Math.PI;
+  const want=Math.atan2(tx-r.pos.x,tz-r.pos.z), da=wrapAngle(want-r.travel);
   const steer=Math.max(-1,Math.min(1,da*2.4));
   let ci=r.idx+9; ci=G.closed?ci%n:Math.min(n-1,ci);
   const t0=G.TAN[r.idx], t1=G.TAN[ci]; const curv=Math.acos(Math.max(-1,Math.min(1,t0.x*t1.x+t0.z*t1.z)));
-  const k=KARTS[r.kartIdx].stats, top=(18+k.speed*2.6)*DIFF[state.diff].top;
+  const k=KARTS[r.kartIdx].stats, top=(18+k.speed*2.6)*DIFF[state.diff].top*SPEED.ai;
+  // drift through sharp corners, only in the direction the corner turns, and let go once overshooting (counter-steer)
+  const bend=Math.sign(wrapAngle(Math.atan2(t1.x,t1.z)-Math.atan2(t0.x,t0.z)));
+  const drift=r.drifting? (curv>DRIFT.aiCurve*0.5&&steer*r.driftDir>-0.3)
+    : (curv>DRIFT.aiCurve&&Math.sign(steer)===bend&&Math.abs(da)<0.6);
   // gentle rubber band toward the player
   const pl=race.racers[0]; const gap=r.prog-pl.prog; const band=DIFF[state.diff].band;
   r.band=1+(gap>20?-band:(gap<-20?band:0));
-  const target=top*r.band*(1-Math.min(0.45,curv*0.9));
+  const target=top*r.band*(1-Math.min(drift?0.3:0.45,curv*0.9));
   const throttle=r.speed<target?1:(r.speed>target+2?-0.6:0);
-  return {throttle,steer};
+  return {throttle,steer,drift};
 }
 const keys={};
 addEventListener('keydown',e=>{ if(e.target.closest&&e.target.closest('#tuner'))return; keys[e.code]=true;
@@ -477,7 +517,7 @@ addEventListener('keydown',e=>{ if(e.target.closest&&e.target.closest('#tuner'))
 addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 function playerInput(){ const up=keys.KeyW||keys.ArrowUp, dn=keys.KeyS||keys.ArrowDown, l=keys.KeyA||keys.ArrowLeft, r=keys.KeyD||keys.ArrowRight;
-  return {throttle:(up?1:0)-(dn?1:0), steer:(l?1:0)-(r?1:0)}; }
+  return {throttle:(up?1:0)-(dn?1:0), steer:(l?1:0)-(r?1:0), drift:!!(keys.ShiftLeft||keys.ShiftRight||keys.Space)}; }
 // ---------- kart collisions ----------
 // Each kart is a capsule in the ground plane: a segment along its heading plus a radius, sized from the wheel hubs
 // (the Tripo bounding boxes are wrong). Overlaps are pushed apart by inverse mass, then an impulse along the contact
@@ -503,9 +543,9 @@ function segClosest(ax,az,bx,bz,cx,cz,dx,dz){ // closest points between segments
   return [ax+ux*s,az+uz*s,cx+vx*t,cz+vz*t];
 }
 function velAt(r,rx,rz){ // planar velocity of a point offset (rx,rz) from the kart center, yaw about +y
-  return [Math.sin(r.heading)*r.speed+r.kvx+r.yaw*rz, Math.cos(r.heading)*r.speed+r.kvz-r.yaw*rx]; }
+  return [Math.sin(r.travel)*r.speed+r.kvx+r.yaw*rz, Math.cos(r.travel)*r.speed+r.kvz-r.yaw*rx]; }
 function setVel(r,vx,vz){ // split back into forward speed (engine axis) and sideways knock
-  const fx=Math.sin(r.heading), fz=Math.cos(r.heading); r.speed=vx*fx+vz*fz; r.kvx=vx-fx*r.speed; r.kvz=vz-fz*r.speed; }
+  const fx=Math.sin(r.travel), fz=Math.cos(r.travel); r.speed=vx*fx+vz*fz; r.kvx=vx-fx*r.speed; r.kvz=vz-fz*r.speed; }
 function collidePair(A,B){
   if(Math.abs(B.pos.y-A.pos.y)>PHYS.contactDy) return 0;
   const [px,pz,qx,qz]=segClosest(...capsule(A),...capsule(B));
@@ -546,7 +586,7 @@ function collideWall(r,dt){
   const fx=Math.sin(r.heading), fz=Math.cos(r.heading);
   if(fx*nx+fz*nz>0){ const along=fx*t.x+fz*t.z, sgn=Math.abs(along)<0.2?1:Math.sign(along);
     let da=Math.atan2(t.x*sgn,t.z*sgn)-r.heading; while(da>Math.PI)da-=2*Math.PI; while(da<-Math.PI)da+=2*Math.PI;
-    r.heading+=da*Math.min(1,PHYS.wallAlign*dt); }
+    const a=Math.min(1,PHYS.wallAlign*dt); r.heading+=da*a; r.travel+=wrapAngle(r.heading-r.travel)*a; }
   const [px,pz]=velAt(r,rx,rz), vn=px*nx+pz*nz;
   if(vn<=0) return 0; // already moving away from the wall
   const iM=1/h.mass, rn=rz*nx-rx*nz, j=(1+PHYS.wallRestitution)*vn/(iM+rn*rn/h.inertia);
@@ -725,12 +765,14 @@ function updateRace(dt,t){
   $('hLap').textContent=G.closed?('Lap '+lap+'/'+race.laps):('Sprint · '+Math.max(0,Math.min(100,Math.round(me.prog/(G.n-3)*100)))+'%');
   $('hTime').textContent=fmt(race.time);
   $('hSpeed').innerHTML=Math.round(Math.abs(me.speed)*6)+'<small>km/h (cartoon scale)</small>';
+  drawDrift(me);
   if(me.wrong>1.2&&!race.ended)toast('Wrong way',0.3);
   if(toastT>0){toastT-=dt; if(toastT<=0)$('hToast').hidden=true;}
   engine(me.speed,race.go&&state.sound);
   // camera
   // the camera yaw trails the kart's heading a little, so turns and spins swing the view instead of snapping it
-  let dy=me.heading-race.camYaw; while(dy>Math.PI)dy-=2*Math.PI; while(dy<-Math.PI)dy+=2*Math.PI;
+  const aim=me.travel+wrapAngle(me.heading-me.travel)*CAM.driftLook;
+  let dy=wrapAngle(aim-race.camYaw);
   race.camYaw+=dy*Math.min(1,dt*CAM.yawRate);
   const cf=V(Math.sin(race.camYaw),0,Math.cos(race.camYaw));
   // distance stays locked to the kart (a lerp would trail further behind the faster you go); only height is smoothed
@@ -742,6 +784,12 @@ function updateRace(dt,t){
   if(Math.abs(fov-raceCam.fov)>0.05){ raceCam.fov=fov; raceCam.updateProjectionMatrix(); }
   drawMini(order);
   if(race.ended){ race.endT-=dt; if(race.endT<=0&&mode==='race'){ showResults(order); } }
+}
+function drawDrift(me){
+  const el=$('hDrift'), on=me.drifting||me.boost>0; el.hidden=!on; if(!on)return;
+  const lv=driftLevel(me); el.classList.toggle('l2',lv===2||(!me.drifting&&me.boost>DRIFT.boostTime));
+  $('hDriftBar').style.width=(me.drifting?Math.min(1,me.driftT/(DRIFT.chargeTime*2)):1)*100+'%';
+  $('hDriftTxt').textContent=me.drifting?(lv?'Drift · boost '+lv:'Drift'):'Boost!';
 }
 function drawMini(order){
   const cv=$('mini'), c=cv.getContext('2d'), W=cv.width, G=race.G;
@@ -773,8 +821,8 @@ function frame(){ requestAnimationFrame(frame); const dt=Math.min(0.05,clock.get
 addEventListener('resize',resize); resize();
 fetch('tracks.json').then(r=>r.json()).then(j=>{TRACKS=j;}).catch(()=>{ $('bPlay').disabled=true; $('bPlay').textContent='Could not load tracks'; });
 show('sTitle'); setMode('title'); frame();
-window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify,collidePair,collideWall,hullOf,raceCam,
-  tune:{CAM,PHYS,GRID,KART,TUNE,regrid,applyKartScale,snapCamera,restart:()=>{ if(race&&state.track)startRace(state.track); },get inRace(){return !!race;}}};
+window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify,collidePair,collideWall,hullOf,raceCam,DRIFT,
+  tune:{CAM,PHYS,GRID,KART,TUNE,DRIFT,SPEED,regrid,applyKartScale,snapCamera,restart:()=>{ if(race&&state.track)startRace(state.track); },get inRace(){return !!race;}}};
 })();
 </script>
 <script src="tuner.js"></script>

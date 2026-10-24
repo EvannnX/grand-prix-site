@@ -96,7 +96,7 @@ figcaption b{color:var(--ink);font-weight:600}
     <div class="fact"><b>4</b><span>drivers, Image 2 → Tripo → auto-rig</span></div>
     <div class="fact"><b>4</b><span>karts, Image 2 → Tripo → Smart Segment</span></div>
     <div class="fact"><b>3</b><span>tracks from Sketchfab, CC BY 4.0</span></div>
-    <div class="fact"><b>6</b><span>major shifts in the plan, marked below</span></div>
+    <div class="fact"><b>7</b><span>major shifts in the plan, marked below</span></div>
   </div>
 </section>
 
@@ -127,6 +127,7 @@ figcaption b{color:var(--ink);font-weight:600}
   <a href="#e-2245"><time>Oct 24 · 22:45</time>Walls at the road edge</a>
   <a href="#e-2304"><time>Oct 24 · 23:04</time>A tuning panel</a>
   <a href="#e-2322"><time>Oct 24 · 23:22</time>My own camera settings</a>
+  <a class="shift" href="#e-2330"><time>Oct 24 · 23:30 · Shift 7</time>Drifting, KartRider style</a>
   <a href="#links"><time>Reference</time>Links and credits</a>
 </nav>
 
@@ -154,6 +155,7 @@ figcaption b{color:var(--ink);font-weight:600}
     <li><b>Physics and camera (me → Claude).</b> I asked for real collisions, smaller karts and a Mario Kart-style camera; Claude did the maths and tested it in simulated races.</li>
     <li><b>Walls (me → Claude).</b> Karts now bounce off the road edge instead of driving onto the grass.</li>
     <li><b>Tuning panel (me → Claude).</b> Sliders in the game so I can set the camera, the starting grid and the physics myself.</li>
+    <li><b>Drifting (me → Claude).</b> Corners are taken by drifting, as in KartRider, with a boost for a long drift; the AI drifts too.</li>
   </ol>
 </article>
 
@@ -508,6 +510,34 @@ Kart 4 — Futuristic racer: ... pointed nose, small front wing, rounded rear wi
       <tr><td>Field of view</td><td class="n">66°</td><td class="n">69°</td></tr>
     </tbody></table></div>
   <p>The camera is now even closer and a little lower than Claude's Mario Kart-style setup, with a slightly wider view.</p>
+</article>
+
+<article id="e-2330">
+  <time>Oct 24 · 23:30</time>
+  <h2>Shift 7: drifting, KartRider style</h2>
+  <div class="shiftnote"><b>Shift</b>Cornering changes from grip driving to drifting. Every kart, the AI included, slides through the corners.</div>
+  <p>I said the driving was too fast, and asked for a drift style, where all the turns are taken by drifting, like in KartRider.</p>
+  <h3>How a drift works</h3>
+  <ul>
+    <li><b>Starting.</b> Hold <code>Shift</code> or <code>Space</code> while steering, above 8 m/s.</li>
+    <li><b>The slide.</b> Until now a kart always moved the way it pointed. Now the kart's body and its direction of travel are separate: in a drift the body swings into the corner and the travel direction follows slowly, so the kart slides sideways, up to about 43°. Steering into the corner tightens the drift, steering out of it opens it. A drift costs a little speed.</li>
+    <li><b>The boost.</b> A drift held for 0.7 s charges a level-1 mini-turbo, 1.4 s a level-2. Letting go fires it: a push of speed and a higher top speed for a moment. A gauge above the speedometer shows the charge.</li>
+    <li><b>Collisions and walls</b> use the direction of travel, so a sliding kart hits things the way it is really moving.</li>
+    <li><b>The camera</b> follows the direction of travel and shows part of the drift angle, so I can see the kart sideways.</li>
+  </ul>
+  <div class="gal one">
+    <figure><button data-lb><img src="img/2330-drift.jpg" alt="Kart sliding sideways through a corner on Mountain Run with the drift gauge showing boost 1"></button><figcaption><b>A drift on Mountain Run.</b> The body points into the corner while the kart slides; the gauge shows a level-1 boost charged.</figcaption></figure>
+  </div>
+  <h3>The AI drifts too, after one fix</h3>
+  <p>Opponents drift on any corner sharper than about 30° ahead of them. In the first test, on Flower Loop's hairpins, they bounced from wall to wall: sometimes they started a drift the wrong way while correcting their line, and they never let go of a drift that was turning too far. Now an AI kart only drifts in the direction the corner bends, and lets go as soon as it has to counter-steer hard.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Track</th><th>Time drifting</th><th>Winner's time, before → after</th></tr></thead>
+    <tbody>
+      <tr><td>Flower Loop (3 laps)</td><td class="n">46%</td><td class="n">87 s → 107 s</td></tr>
+      <tr><td>Sky Plaza Climb</td><td class="n">32%</td><td class="n">19 s → 22 s</td></tr>
+      <tr><td>Mountain Run</td><td class="n">41%</td><td class="n">46 s → 51 s</td></tr>
+    </tbody></table></div>
+  <p>Races are slower now, mostly on the twisty Flower Loop. The opponents also run at 0.9× of their old speed. Both speeds, and everything about the drift, have sliders in the tuning panel, plus an "Auto drift" switch that starts a drift by itself when I steer hard, without the key.</p>
 </article>
 
 <article id="links">
