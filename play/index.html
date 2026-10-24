@@ -201,18 +201,24 @@ const DRIVERS=[1,2,3,4].map(i=>({id:i,label:'Driver 0'+i,file:'driver'+i,img:'d'
 const KARTS=[
  {id:1,name:'Classic',desc:'Open-frame go-kart',file:'kart1',hubs:{"lf":[0.2558,0.106,0.2196],"rf":[-0.2545,0.1061,0.2195],"lr":[0.2371,0.1155,-0.3091],"rr":[-0.2338,0.1155,-0.3089]},radius:{"lf":0.106,"rf":0.106,"lr":0.1099,"rr":0.1099},steerCenter:[0.0005, 0.2896, 0.1658],wheels:{lf:'tripo_part_6',rf:'tripo_part_2',lr:'tripo_part_8',rr:'tripo_part_10'},
   steer:['tripo_part_41','tripo_part_22','tripo_part_42','tripo_part_43','tripo_part_64','tripo_part_71'],steerAxis:[-0.014,0.644,-0.765],seat:[0,0.15,-0.08],
-  stats:{speed:3,accel:3,grip:3,offroad:2}},
+  mass:1.0,stats:{speed:3,accel:3,grip:3,offroad:2}},
  {id:2,name:'Roadster',desc:'Rounded retro body',file:'kart2',hubs:{"lf":[0.2522,0.114,0.2777],"rf":[-0.2595,0.1112,0.3109],"lr":[0.2567,0.113,-0.1811],"rr":[-0.221,0.1128,-0.1969]},radius:{"lf":0.114,"rf":0.112,"lr":0.1114,"rr":0.112},steerCenter:[0.0051, 0.2662, 0.1751],wheels:{lf:'tripo_part_63',rf:'tripo_part_79',lr:'tripo_part_78',rr:'tripo_part_24'},mirror:{rf:'lf',rr:'lr'},
   steer:['tripo_part_3'],steerAxis:[-0.003,0.269,-0.963],seat:[0,0.16,-0.03],
-  stats:{speed:3,accel:4,grip:3,offroad:2}},
+  mass:1.05,stats:{speed:3,accel:4,grip:3,offroad:2}},
  {id:3,name:'Buggy',desc:'Big off-road tires',file:'kart3',hubs:{"lf":[0.3583,0.1472,0.3093],"rf":[-0.3582,0.1511,0.3097],"lr":[0.279,0.1404,-0.2436],"rr":[-0.3285,0.143,-0.2433]},radius:{"lf":0.143,"rf":0.1431,"lr":0.1404,"rr":0.1396},steerCenter:[-0.0003, 0.3531, 0.1206],wheels:{lf:'tripo_part_1',rf:'tripo_part_5',lr:'tripo_part_4',rr:'tripo_part_3'},
   steer:['tripo_part_9','tripo_part_29'],steerAxis:[-0.002,0.33,-0.944],seat:[0,0.23,-0.1],
-  stats:{speed:2,accel:3,grip:3,offroad:5}},
+  mass:1.3,stats:{speed:2,accel:3,grip:3,offroad:5}},
  {id:4,name:'Racer',desc:'Winged futuristic racer',file:'kart4',hubs:{"lf":[0.2365,0.1057,0.2265],"rf":[-0.2368,0.1059,0.2259],"lr":[0.2342,0.1067,-0.2592],"rr":[-0.2364,0.1066,-0.2593]},radius:{"lf":0.1055,"rf":0.1055,"lr":0.1067,"rr":0.1066},steerCenter:[-0.0004, 0.2296, 0.1042],wheels:{lf:'tripo_part_4',rf:'tripo_part_1',lr:'tripo_part_19',rr:'tripo_part_31'},
   steer:['tripo_part_15'],steerAxis:[-0.001,0.38,-0.925],seat:[0,0.14,-0.07],
-  stats:{speed:5,accel:2,grip:4,offroad:1}}];
+  mass:0.9,stats:{speed:5,accel:2,grip:4,offroad:1}}];
 const FILE_MB={driver1:3.1,driver2:3.1,driver3:3.2,driver4:3.1,kart1:3.1,kart2:3.6,kart3:2.9,kart4:4.1,map_njxz:7.7,map_qms:6.2,map_tkgcz:6.4};
-const DRIVER_SCALE=0.72, KART_SCALE=1.35;
+const DRIVER_SCALE=0.72, KART_SCALE=0.675;
+// Collision physics: fixed sub-step, bounciness, side-swipe friction, how fast sideways knock and spin bleed off, spin cap,
+// max height gap for contact, impulse that plays a bump sound, spin inertia boost (game speeds are huge for a 0.5 m kart).
+const PHYS={dt:1/120,restitution:0.35,friction:0.25,knockGrip:4,yawDamp:5,maxYaw:3,contactDy:0.7,thud:2.5,spinInertia:8};
+// Chase camera (Mario Kart style): distance behind, height, look-ahead point, base FOV, extra FOV at top speed,
+// how fast the view swings round after the kart turns, and how fast it follows height changes.
+const CAM={back:1.9,up:0.8,lookAhead:2.2,lookUp:0.35,fov:66,fovBoost:12,fovSpeed:30,yawRate:7,posRate:12};
 const DIFF=[{name:'Easy',top:0.80,band:0.10},{name:'Normal',top:0.92,band:0.06},{name:'Hard',top:1.0,band:0.03}];
 const state={diff:1,toon:true,driver:0,kart:0,track:null,sound:true};
 let TRACKS=null;
@@ -341,7 +347,7 @@ function renderPreview(dt,t){
 }
 
 // ---------- race scene ----------
-const raceScene=new THREE.Scene(); const raceCam=new THREE.PerspectiveCamera(62,1,0.1,4000);
+const raceScene=new THREE.Scene(); const raceCam=new THREE.PerspectiveCamera(CAM.fov,1,0.05,4000);
 raceScene.add(new THREE.HemisphereLight(0xffffff,0x6a5a88,1.05));
 const sun=new THREE.DirectionalLight(0xffffff,0.9); sun.position.set(30,60,20); raceScene.add(sun);
 let race=null;
@@ -370,7 +376,7 @@ function idxDelta(G,a,b){ let d=b-a; if(G.closed){ if(d>G.n/2)d-=G.n; if(d<-G.n/
 
 function makeRacer(i,driverId,kartIdx,isPlayer,kartObj){
   return {i,driverId,kartIdx,isPlayer,ko:kartObj,pos:V(),heading:0,speed:0,vy:0,steer:0,idx:0,prog:0,lap:0,finished:false,finishTime:0,
-    off:0,out:0,stuck:0,reverse:0,lane:0,phase:Math.random()*6.28,up:V(0,1,0),grounded:true,wrong:0};
+    off:0,out:0,stuck:0,reverse:0,lane:0,kvx:0,kvz:0,yaw:0,hull:hullOf(KARTS[kartIdx]),phase:Math.random()*6.28,up:V(0,1,0),grounded:true,wrong:0};
 }
 function placeOnGrid(r,slot){
   const G=race.G, spacing=1.6;
@@ -379,11 +385,11 @@ function placeOnGrid(r,slot){
   const stepLen=G.P[1].distanceTo(G.P[0])||1; const k=Math.round(back*spacing/stepLen);
   let i=i0-k; if(G.closed)i=(i+G.n)%G.n; else i=Math.max(0,i);
   const p=G.P[i], t=G.TAN[i]; const w=G.HW[i]*0.35*side;
-  r.pos.set(p.x+t.z*w,p.y+0.6,p.z-t.x*w); r.heading=Math.atan2(t.x,t.z); r.idx=i; r.prog=G.closed?-k:i; r.speed=0; r.vy=0;
+  r.pos.set(p.x+t.z*w,p.y+0.6,p.z-t.x*w); r.heading=Math.atan2(t.x,t.z); r.idx=i; r.prog=G.closed?-k:i; r.speed=0; r.vy=0; r.kvx=r.kvz=r.yaw=0;
 }
 function resetRacer(r){
   const G=race.G; const i=r.idx; const p=G.P[i],t=G.TAN[i];
-  r.pos.set(p.x,p.y+0.3,p.z); r.heading=Math.atan2(t.x,t.z); r.speed=0; r.vy=0; r.off=0; r.out=0; r.stuck=0; r.reverse=0;
+  r.pos.set(p.x,p.y+0.3,p.z); r.heading=Math.atan2(t.x,t.z); r.speed=0; r.vy=0; r.off=0; r.out=0; r.stuck=0; r.reverse=0; r.kvx=r.kvz=r.yaw=0;
   if(r.isPlayer)toast('Back on track',1.2);
 }
 function groundAt(pos,exp){
@@ -415,6 +421,9 @@ function stepRacer(r,dt,input,t){
   const turnRate=(1.9+k.grip*0.12)*(1-0.35*Math.min(1,Math.abs(r.speed)/top));
   r.heading+=r.steer*turnRate*Math.max(-1,Math.min(1,r.speed/6))*dt;
   r.pos.x+=Math.sin(r.heading)*r.speed*dt; r.pos.z+=Math.cos(r.heading)*r.speed*dt;
+  // sideways knock and spin from collisions, bled off by tire grip
+  r.pos.x+=r.kvx*dt; r.pos.z+=r.kvz*dt; r.heading+=r.yaw*dt;
+  const kd=Math.exp(-PHYS.knockGrip*dt); r.kvx*=kd; r.kvz*=kd; r.yaw*=Math.exp(-PHYS.yawDamp*dt);
   // Stick to the road: follow the real road surface when it is there, and the racing line's height where the
   // road mesh has gaps (jump pads, seams, lifts). Karts never fall through or off the track.
   const exp=lineHeight(G,r.idx,r.pos);
@@ -462,10 +471,60 @@ addEventListener('keyup',e=>{keys[e.code]=false;});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 function playerInput(){ const up=keys.KeyW||keys.ArrowUp, dn=keys.KeyS||keys.ArrowDown, l=keys.KeyA||keys.ArrowLeft, r=keys.KeyD||keys.ArrowRight;
   return {throttle:(up?1:0)-(dn?1:0), steer:(l?1:0)-(r?1:0)}; }
+// ---------- kart collisions ----------
+// Each kart is a capsule in the ground plane: a segment along its heading plus a radius, sized from the wheel hubs
+// (the Tripo bounding boxes are wrong). Overlaps are pushed apart by inverse mass, then an impulse along the contact
+// normal n is applied: j = -(1+e)(v_rel·n) / (1/mA + 1/mB + (rA×n)²/IA + (rB×n)²/IB). That conserves momentum, sends the
+// lighter kart further, and spins a kart that is hit off its center. A capped friction impulse slows side-swipes.
+function hullOf(k){
+  let hw=0,front=-1e9,rear=1e9;
+  for(const key in k.hubs){ const h=k.hubs[key], r=k.radius[key]; hw=Math.max(hw,Math.abs(h[0])+r*0.6); front=Math.max(front,h[2]+r); rear=Math.min(rear,h[2]-r); }
+  const s=KART_SCALE, rad=hw*s, len=(front-rear)*s;
+  return {rad,half:Math.max(0,len/2-rad),cz:(front+rear)/2*s,mass:k.mass,inertia:PHYS.spinInertia*k.mass*(len*len+4*rad*rad)/12};
+}
+const clamp01=x=>Math.max(0,Math.min(1,x));
+function capsule(r){ const fx=Math.sin(r.heading), fz=Math.cos(r.heading), h=r.hull, cx=r.pos.x+fx*h.cz, cz=r.pos.z+fz*h.cz;
+  return [cx-fx*h.half,cz-fz*h.half,cx+fx*h.half,cz+fz*h.half]; }
+function segClosest(ax,az,bx,bz,cx,cz,dx,dz){ // closest points between segments AB and CD (x/z plane)
+  const ux=bx-ax,uz=bz-az,vx=dx-cx,vz=dz-cz,wx=ax-cx,wz=az-cz, a=ux*ux+uz*uz, e=vx*vx+vz*vz, f=vx*wx+vz*wz, EPS=1e-9;
+  let s=0,t=0;
+  if(a<=EPS&&e>EPS) t=clamp01(f/e);
+  else if(a>EPS){ const c=ux*wx+uz*wz;
+    if(e<=EPS) s=clamp01(-c/a);
+    else { const b=ux*vx+uz*vz, den=a*e-b*b; s=den>EPS?clamp01((b*f-c*e)/den):0; t=(b*s+f)/e;
+      if(t<0){t=0;s=clamp01(-c/a);} else if(t>1){t=1;s=clamp01((b-c)/a);} } }
+  return [ax+ux*s,az+uz*s,cx+vx*t,cz+vz*t];
+}
+function velAt(r,rx,rz){ // planar velocity of a point offset (rx,rz) from the kart center, yaw about +y
+  return [Math.sin(r.heading)*r.speed+r.kvx+r.yaw*rz, Math.cos(r.heading)*r.speed+r.kvz-r.yaw*rx]; }
+function setVel(r,vx,vz){ // split back into forward speed (engine axis) and sideways knock
+  const fx=Math.sin(r.heading), fz=Math.cos(r.heading); r.speed=vx*fx+vz*fz; r.kvx=vx-fx*r.speed; r.kvz=vz-fz*r.speed; }
+function collidePair(A,B){
+  if(Math.abs(B.pos.y-A.pos.y)>PHYS.contactDy) return 0;
+  const [px,pz,qx,qz]=segClosest(...capsule(A),...capsule(B));
+  let nx=qx-px, nz=qz-pz; const d=Math.hypot(nx,nz), minD=A.hull.rad+B.hull.rad;
+  if(d>=minD) return 0;
+  if(d>1e-6){nx/=d;nz/=d;} else {nx=Math.cos(A.heading);nz=-Math.sin(A.heading);}
+  const iA=1/A.hull.mass, iB=1/B.hull.mass, pen=minD-d;
+  A.pos.x-=nx*pen*iA/(iA+iB); A.pos.z-=nz*pen*iA/(iA+iB); B.pos.x+=nx*pen*iB/(iA+iB); B.pos.z+=nz*pen*iB/(iA+iB);
+  const cpx=(px+nx*A.hull.rad+qx-nx*B.hull.rad)/2, cpz=(pz+nz*A.hull.rad+qz-nz*B.hull.rad)/2;
+  const rAx=cpx-A.pos.x, rAz=cpz-A.pos.z, rBx=cpx-B.pos.x, rBz=cpz-B.pos.z;
+  const [aX,aZ]=velAt(A,rAx,rAz), [bX,bZ]=velAt(B,rBx,rBz), relX=bX-aX, relZ=bZ-aZ, vn=relX*nx+relZ*nz;
+  if(vn>=0) return 0; // already separating
+  const rnA=rAz*nx-rAx*nz, rnB=rBz*nx-rBx*nz;
+  const j=-(1+PHYS.restitution)*vn/(iA+iB+rnA*rnA/A.hull.inertia+rnB*rnB/B.hull.inertia);
+  const tx=-nz, tz=nx, vt=relX*tx+relZ*tz, jt=Math.max(-PHYS.friction*j,Math.min(PHYS.friction*j,-vt/(iA+iB)));
+  const Jx=nx*j+tx*jt, Jz=nz*j+tz*jt;
+  const [vAx,vAz]=velAt(A,0,0), [vBx,vBz]=velAt(B,0,0);
+  setVel(A,vAx-Jx*iA,vAz-Jz*iA); setVel(B,vBx+Jx*iB,vBz+Jz*iB);
+  const cap=w=>Math.max(-PHYS.maxYaw,Math.min(PHYS.maxYaw,w));
+  A.yaw=cap(A.yaw-(rAz*Jx-rAx*Jz)/A.hull.inertia); B.yaw=cap(B.yaw+(rBz*Jx-rBx*Jz)/B.hull.inertia);
+  return j;
+}
 function collide(){
   const R=race.racers;
-  for(let a=0;a<R.length;a++)for(let b=a+1;b<R.length;b++){ const A=R[a],B=R[b]; const dx=B.pos.x-A.pos.x,dz=B.pos.z-A.pos.z,dy=B.pos.y-A.pos.y; const d=Math.hypot(dx,dz);
-    if(d<1.1&&Math.abs(dy)<1.4&&d>1e-4){const push=(1.1-d)/2, nx=dx/d,nz=dz/d; A.pos.x-=nx*push;A.pos.z-=nz*push;B.pos.x+=nx*push;B.pos.z+=nz*push; A.speed*=0.97;B.speed*=0.97;} }
+  for(let a=0;a<R.length;a++)for(let b=a+1;b<R.length;b++){ const j=collidePair(R[a],R[b]);
+    if(j>PHYS.thud&&(R[a].isPlayer||R[b].isPlayer)) beep(110,0.08); }
 }
 
 // ---------- audio ----------
@@ -576,7 +635,9 @@ function buildRace(T,trackKey,get,lineup){
   lineup.forEach((l,slot)=>{ const ko=assemble(buildDriver(get(DRIVERS[l.d].file)),buildKart(KARTS[l.k],get(KARTS[l.k].file)));
     toonify(ko.group,state.toon); ko.group.scale.setScalar(KART_SCALE); root.add(ko.group);
     const r=makeRacer(slot,l.d,l.k,l.p,ko); r.lane=[0,-0.35,0.3,0.05][slot]; r.band=1; placeOnGrid(r,l.p?3:slot-1); race.racers.push(r); });
-  const p=race.racers[0]; camPos.set(p.pos.x-Math.sin(p.heading)*6,p.pos.y+3,p.pos.z-Math.cos(p.heading)*6);
+  const p=race.racers[0]; race.camYaw=p.heading;
+  camPos.set(p.pos.x-Math.sin(p.heading)*CAM.back,p.pos.y+CAM.up,p.pos.z-Math.cos(p.heading)*CAM.back);
+  camLook.set(p.pos.x+Math.sin(p.heading)*CAM.lookAhead,p.pos.y+CAM.lookUp,p.pos.z+Math.cos(p.heading)*CAM.lookAhead);
   show(null); setMode('race'); $('hBig').hidden=false; $('hHint').hidden=false; setTimeout(()=>{$('hHint').hidden=true;},7000);
 }
 function togglePause(){ if(!race||race.ended)return; race.paused=!race.paused; if(race.paused){show('sPause');setMode('pause');engine(0,false);} else {show(null);setMode('race');} }
@@ -590,6 +651,13 @@ function endRaceScene(){ if(race){ raceScene.remove(race.root); race.running=fal
 const camPos=V(), camLook=V();
 function fmt(t){const m=Math.floor(t/60), s=t-m*60; return m+':'+(s<10?'0':'')+s.toFixed(1);}
 function ord(n){return n+(n===1?'st':n===2?'nd':n===3?'rd':'th');}
+function moveRacer(r,dt,t){
+  const G=race.G;
+  if(r.finished&&!r.isPlayer){ stepRacer(r,dt,{throttle:0.3,steer:aiInput(r,dt,t).steer},t); return; }
+  const inp=r.isPlayer?(race.ended?{throttle:0,steer:0}:(window.__autopilot?aiInput(r,dt,t):playerInput())):aiInput(r,dt,t); stepRacer(r,dt,inp,t);
+  const goal=G.closed?race.laps*G.n:G.n-3;
+  if(!r.finished&&race.go&&r.prog>=goal){ r.finished=true; r.finishTime=race.time; race.finishOrder.push(r); if(r.isPlayer){ beep(660,0.2);setTimeout(()=>beep(990,0.4),180); race.ended=true; race.endT=2.6; } }
+}
 function updateRace(dt,t){
   if(race.paused)return;
   const R=race.racers, G=race.G;
@@ -598,12 +666,9 @@ function updateRace(dt,t){
     $('hBig').textContent=c>=1?String(c):'GO!';
     if(race.count<=0.6){race.go=true; beep(880,0.4);} }
   else { race.time+=dt; if(race.count>-0.6){race.count-=dt; if(race.count<=-0.6)$('hBig').hidden=true;} }
-  R.forEach(r=>{ if(r.finished&&!r.isPlayer){ stepRacer(r,dt,{throttle:0.3,steer:aiInput(r,dt,t).steer},t); return; }
-    const inp=r.isPlayer?(race.ended?{throttle:0,steer:0}:(window.__autopilot?aiInput(r,dt,t):playerInput())):aiInput(r,dt,t); stepRacer(r,dt,inp,t);
-    const goal=race.G.closed?race.laps*G.n:G.n-3;
-    if(!r.finished&&race.go&&r.prog>=goal){ r.finished=true; r.finishTime=race.time; race.finishOrder.push(r); if(r.isPlayer){ beep(660,0.2);setTimeout(()=>beep(990,0.4),180); race.ended=true; race.endT=2.6; } }
-  });
-  collide();
+  // fixed physics sub-steps so fast karts cannot pass through each other in one frame
+  const steps=Math.max(1,Math.ceil(dt/PHYS.dt)), h=dt/steps;
+  for(let s=0;s<steps;s++){ R.forEach(r=>moveRacer(r,h,t)); collide(); }
   R.forEach(r=>{ const g=r.ko.group; g.position.copy(r.pos);
     const fwd=V(Math.sin(r.heading),0,Math.cos(r.heading)); const up=r.up.clone(); const right=V().crossVectors(up,fwd).normalize(); const f2=V().crossVectors(right,up).normalize();
     g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,f2));
@@ -620,10 +685,17 @@ function updateRace(dt,t){
   if(toastT>0){toastT-=dt; if(toastT<=0)$('hToast').hidden=true;}
   engine(me.speed,race.go&&state.sound);
   // camera
-  const fwd=V(Math.sin(me.heading),0,Math.cos(me.heading));
-  const want=V(me.pos.x-fwd.x*4.4,me.pos.y+1.9,me.pos.z-fwd.z*4.4);
-  camPos.lerp(want,Math.min(1,dt*5)); camLook.lerp(V(me.pos.x+fwd.x*3,me.pos.y+0.9,me.pos.z+fwd.z*3),Math.min(1,dt*8));
+  // the camera yaw trails the kart's heading a little, so turns and spins swing the view instead of snapping it
+  let dy=me.heading-race.camYaw; while(dy>Math.PI)dy-=2*Math.PI; while(dy<-Math.PI)dy+=2*Math.PI;
+  race.camYaw+=dy*Math.min(1,dt*CAM.yawRate);
+  const cf=V(Math.sin(race.camYaw),0,Math.cos(race.camYaw));
+  // distance stays locked to the kart (a lerp would trail further behind the faster you go); only height is smoothed
+  const ky=Math.min(1,dt*CAM.posRate);
+  camPos.set(me.pos.x-cf.x*CAM.back,camPos.y+(me.pos.y+CAM.up-camPos.y)*ky,me.pos.z-cf.z*CAM.back);
+  camLook.set(me.pos.x+cf.x*CAM.lookAhead,camLook.y+(me.pos.y+CAM.lookUp-camLook.y)*ky,me.pos.z+cf.z*CAM.lookAhead);
   raceCam.position.copy(camPos); raceCam.lookAt(camLook);
+  const fov=CAM.fov+CAM.fovBoost*Math.min(1,Math.max(0,me.speed)/CAM.fovSpeed);
+  if(Math.abs(fov-raceCam.fov)>0.05){ raceCam.fov=fov; raceCam.updateProjectionMatrix(); }
   drawMini(order);
   if(race.ended){ race.endT-=dt; if(race.endT<=0&&mode==='race'){ showResults(order); } }
 }
@@ -657,7 +729,7 @@ function frame(){ requestAnimationFrame(frame); const dt=Math.min(0.05,clock.get
 addEventListener('resize',resize); resize();
 fetch('tracks.json').then(r=>r.json()).then(j=>{TRACKS=j;}).catch(()=>{ $('bPlay').disabled=true; $('bPlay').textContent='Could not load tracks'; });
 show('sTitle'); setMode('title'); frame();
-window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify};
+window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify,collidePair,hullOf,raceCam};
 })();
 </script>
 
