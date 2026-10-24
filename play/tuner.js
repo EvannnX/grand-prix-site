@@ -1,5 +1,5 @@
 // Tuning panel: sliders for the camera, starting grid, kart size and collision physics.
-// Opens with the T key or the "Tune" button. Changes apply live and are saved in this browser;
+// Debug page only (tune.html / index.html?tune). Opens with the T key or the "Tune" button. Changes apply live and are saved in this browser;
 // "Copy settings" gives a JSON block that can be pasted back into the code as new defaults.
 (function(){
 'use strict';

@@ -218,7 +218,7 @@ const KARTS=[
   mass:0.9,stats:{speed:5,accel:2,grip:4,offroad:1}}];
 const FILE_MB={driver1:3.1,driver2:3.1,driver3:3.2,driver4:3.1,kart1:3.1,kart2:3.6,kart3:2.9,kart4:4.1,map_njxz:7.7,map_qms:6.2,map_tkgcz:6.4};
 const DRIVER_SCALE=0.72;
-const KART={scale:0.675}; // kart + driver size in the race (the tuning panel can change it live)
+const KART={scale:0.45}; // kart + driver size in the race (the tuning panel can change it live)
 // Starting grid: first row's distance behind the start line, gap between rows, sideways offset as a fraction of the
 // road half-width, and the player's slot (0 front-left, 1 front-right, 2 back-left, 3 back-right).
 const GRID={front:1.6,rowGap:3.2,sideFrac:0.35,playerSlot:3};
@@ -231,7 +231,7 @@ const PHYS={dt:1/120,restitution:0.35,friction:0.25,knockGrip:4,yawDamp:5,maxYaw
 // a wall swings parallel to it (karts only turn while moving, so without this a kart nosed into a wall stays pinned).
 // Chase camera (Mario Kart style): distance behind, height, look-ahead point, base FOV, extra FOV at top speed,
 // how fast the view swings round after the kart turns, and how fast it follows height changes.
-const CAM={back:1.2,up:0.7,lookAhead:2.2,lookUp:0.3,fov:69,fovBoost:12,fovSpeed:30,yawRate:7,posRate:12,driftLook:0.35};
+const CAM={back:0.8,up:0.47,lookAhead:1.47,lookUp:0.2,fov:69,fovBoost:12,fovSpeed:30,yawRate:7,posRate:12,driftLook:0.35};
 // Drift (KartRider style): hold Shift or Space while steering. The kart body swings into the corner while its direction
 // of travel lags behind, so it slides sideways. bias/steer: body turn rate in a drift (steering into the corner tightens
 // it, counter-steering opens it); grip/normalGrip: how fast travel catches up with the body; maxAngle: largest slide angle;
@@ -241,6 +241,12 @@ const DRIFT={minSpeed:8,minSteer:0.3,bias:1.3,steer:1.0,grip:2.2,normalGrip:14,m
   chargeTime:0.7,boostTime:0.8,boostPower:0.3,boostKick:3,auto:0,autoSteer:0.8,autoSpeed:14,aiCurve:0.55};
 // Speed multipliers on top of each kart's stats: the player, and the AI opponents.
 const SPEED={player:1,ai:0.9};
+// Vertical motion: karts stick to the surface under them (road, or the ground meshes a track lists) and fly under
+// gravity when it drops away. snap: how far the surface may drop in one step and still count as "still on it";
+// stepUp: how high a lip can be driven onto. Where the road mesh has a gap (a jump in the original maps) the take-off gets
+// just enough upward speed to clear it (clear: margin over the landing, launchMax cap; Sky Plaza's launch pad needs ~20 m/s). A kart that falls more than fallReset
+// below the racing line, or is airborne longer than airReset seconds, is put back on the track.
+const JUMP={gravity:18,snap:0.5,stepUp:0.6,clear:0.5,maxVy:9,fallReset:3,airReset:3,roadBand:3,groundAbove:0.5,holdDepth:1.2,launchMax:25};
 const DIFF=[{name:'Easy',top:0.80,band:0.10},{name:'Normal',top:0.92,band:0.06},{name:'Hard',top:1.0,band:0.03}];
 const state={diff:1,toon:true,driver:0,kart:0,track:null,sound:true};
 let TRACKS=null;
@@ -398,26 +404,55 @@ function idxDelta(G,a,b){ let d=b-a; if(G.closed){ if(d>G.n/2)d-=G.n; if(d<-G.n/
 
 function makeRacer(i,driverId,kartIdx,isPlayer,kartObj){
   return {i,driverId,kartIdx,isPlayer,ko:kartObj,pos:V(),heading:0,speed:0,vy:0,steer:0,idx:0,prog:0,lap:0,finished:false,finishTime:0,
-    off:0,out:0,stuck:0,reverse:0,lane:0,kvx:0,kvz:0,yaw:0,travel:0,drifting:false,driftDir:0,driftT:0,boost:0,hull:hullOf(KARTS[kartIdx]),phase:Math.random()*6.28,up:V(0,1,0),grounded:true,wrong:0};
+    off:0,out:0,stuck:0,reverse:0,lane:0,kvx:0,kvz:0,yaw:0,travel:0,drifting:false,driftDir:0,driftT:0,boost:0,hull:hullOf(KARTS[kartIdx]),phase:Math.random()*6.28,up:V(0,1,0),air:0,grounded:true,wrong:0};
 }
 function placeOnGrid(r,slot){
   const G=race.G, back=GRID.front+(slot>>1)*GRID.rowGap, side=slot%2?-1:1;
   let i0=race.startIdx; r.gridSlot=slot;
   const stepLen=G.P[1].distanceTo(G.P[0])||1; const k=Math.round(back/stepLen);
   let i=i0-k; if(G.closed)i=(i+G.n)%G.n; else i=Math.max(0,i);
-  const p=G.P[i], t=G.TAN[i]; const w=G.HW[i]*GRID.sideFrac*side;
-  r.pos.set(p.x+t.z*w,p.y+0.6,p.z-t.x*w); r.heading=Math.atan2(t.x,t.z); r.idx=i; r.prog=G.closed?-k:i; r.speed=0; r.vy=0; r.kvx=r.kvz=r.yaw=0; r.travel=r.heading; r.drifting=false; r.boost=0;
+  const p=G.P[i], t=G.TAN[i]; const w=Math.min(G.WL[i],G.WR[i])*GRID.sideFrac*side;
+  r.pos.set(p.x+t.z*w,p.y+0.3,p.z-t.x*w); r.grounded=false; r.air=0; r.heading=Math.atan2(t.x,t.z); r.idx=i; r.prog=G.closed?-k:i; r.speed=0; r.vy=0; r.kvx=r.kvz=r.yaw=0; r.travel=r.heading; r.drifting=false; r.boost=0;
 }
-function resetRacer(r){
-  const G=race.G; const i=r.idx; const p=G.P[i],t=G.TAN[i];
-  r.pos.set(p.x,p.y+0.3,p.z); r.heading=Math.atan2(t.x,t.z); r.speed=0; r.vy=0; r.off=0; r.out=0; r.stuck=0; r.reverse=0; r.kvx=r.kvz=r.yaw=0; r.travel=r.heading; r.drifting=false; r.boost=0;
+function resetRacer(r,why){
+  if(race.resets)race.resets.push({kart:r.i,idx:r.idx,why:why||'key',t:+race.time.toFixed(1)}); // for debugging
+  const G=race.G; let i=r.idx; if(race.gaps&&race.gaps.inGap[i]){ i=race.gaps.land[i]; r.idx=i; } // never back into a gap
+  const p=G.P[i],t=G.TAN[i];
+  r.pos.set(p.x,p.y+0.3,p.z); r.grounded=false; r.air=0; r.heading=Math.atan2(t.x,t.z); r.speed=0; r.vy=0; r.off=0; r.out=0; r.stuck=0; r.reverse=0; r.kvx=r.kvz=r.yaw=0; r.travel=r.heading; r.drifting=false; r.boost=0;
   if(r.isPlayer)toast('Back on track',1.2);
 }
-function groundAt(pos,exp){
-  const top=Math.max(pos.y,exp)+1.8; ray.set(V(pos.x,top,pos.z),DOWN); ray.far=top-Math.min(pos.y,exp)+2.6;
-  const h=ray.intersectObjects(race.road,false); if(!h.length)return null;
-  let best=h[0]; for(const x of h){ if(Math.abs(x.point.y-exp)<Math.abs(best.point.y-exp))best=x; } return best;
+const UP=V(0,1,0), rayFrom=V();
+// First surface under a point, starting stepUp above it (so a roof or tunnel ceiling overhead is never picked).
+// Only surfaces that belong to the track here count: road within roadBand of the racing line's height (bridges and
+// roads passing below stay separate), ground meshes only at or below the line (a hill or tunnel roof is not the road).
+function surfaceBelow(pos,far,lineY){
+  rayFrom.set(pos.x,pos.y+JUMP.stepUp,pos.z); ray.set(rayFrom,DOWN); ray.far=far+JUMP.stepUp;
+  for(const h of ray.intersectObjects(race.solid,false)){ const y=h.point.y;
+    if(h.object.userData.road? Math.abs(y-lineY)<JUMP.roadBand : y<lineY+JUMP.groundAbove) return h; }
+  return null;
 }
+// Gaps in the road along the racing line: runs of points with no road mesh under them. Each point in a gap (and the
+// three points before it, where karts take off) maps to the point where the road resumes.
+function findGaps(G,road){
+  const land=new Array(G.n).fill(-1), list=[]; let i=0;
+  const hasRoad=k=>{ const p=G.P[k]; rayFrom.set(p.x,p.y+1.2,p.z); ray.set(rayFrom,DOWN); ray.far=2.4; return ray.intersectObjects(road,false).length>0; };
+  const ok=G.P.map((_,k)=>hasRoad(k));
+  while(i<G.n){ if(ok[i]){i++;continue;} let j=i; while(j<G.n&&!ok[j])j++;
+    const end=Math.min(G.n-1,j); for(let k=Math.max(0,i-3);k<j;k++)land[k]=end; list.push([i,j-1]); i=j; }
+  return {land,list,inGap:ok.map(x=>!x)};
+}
+// How far the road mesh really reaches on each side of the racing line (left = positive lateral), found by binary
+// search between minWidth and the recorded half-width. The walls stand there, so karts cannot drive off a narrow ramp.
+// Over a gap there is no mesh to measure, so the recorded width is kept.
+function measureWidths(G,road,inGap){
+  const WL=[],WR=[];
+  const hit=(i,off)=>{ const p=G.P[i],t=G.TAN[i]; rayFrom.set(p.x+t.z*off,p.y+1.2,p.z-t.x*off); ray.set(rayFrom,DOWN); ray.far=2.4; return ray.intersectObjects(road,false).length>0; };
+  const side=(i,sgn)=>{ const hw=G.HW[i]; if(inGap[i]||hit(i,sgn*hw))return hw;
+    let lo=0,hi=hw; for(let k=0;k<5;k++){ const m=(lo+hi)/2; if(hit(i,sgn*m))lo=m; else hi=m; } return Math.max(WALL_MIN,lo); };
+  for(let i=0;i<G.n;i++){ WL.push(side(i,1)); WR.push(side(i,-1)); }
+  return {WL,WR};
+}
+const WALL_MIN=1.2; // narrowest a wall may close in (m from the racing line)
 function lineHeight(G,i,pos){
   const j=G.closed?(i+1)%G.n:Math.min(G.n-1,i+1), k=G.closed?(i-1+G.n)%G.n:Math.max(0,i-1);
   const p=G.P[i]; const nb=(Math.hypot(G.P[j].x-pos.x,G.P[j].z-pos.z)<Math.hypot(G.P[k].x-pos.x,G.P[k].z-pos.z))?G.P[j]:G.P[k];
@@ -454,23 +489,44 @@ function stepRacer(r,dt,input,t){
   // sideways knock and spin from collisions, bled off by tire grip
   r.pos.x+=r.kvx*dt; r.pos.z+=r.kvz*dt; r.heading+=r.yaw*dt;
   const kd=Math.exp(-PHYS.knockGrip*dt); r.kvx*=kd; r.kvz*=kd; r.yaw*=Math.exp(-PHYS.yawDamp*dt);
-  // Stick to the road: follow the real road surface when it is there, and the racing line's height where the
-  // road mesh has gaps (jump pads, seams, lifts). Karts never fall through or off the track.
-  const exp=lineHeight(G,r.idx,r.pos);
-  const g=groundAt(r.pos,exp);
-  let targetY=exp, n=null;
-  if(g&&Math.abs(g.point.y-exp)<2.5){ targetY=g.point.y; n=g.face?g.face.normal.clone().transformDirection(g.object.matrixWorld):null; if(n&&n.y<0)n.negate(); }
-  else { const a=G.P[r.idx], b=G.P[Math.min(G.n-1,r.idx+1)], c=G.P[Math.max(0,r.idx-1)]; const run=Math.max(0.01,Math.hypot(b.x-c.x,b.z-c.z)); const slope=(b.y-c.y)/run;
-    n=V(-G.TAN[r.idx].x*slope,1,-G.TAN[r.idx].z*slope).normalize(); }
-  r.pos.y+= (targetY-r.pos.y)*Math.min(1,dt*(targetY>r.pos.y?20:12)); r.vy=0; r.grounded=true;
-  if(n) r.up.lerp(n,Math.min(1,dt*8)).normalize();
+  updateVertical(r,dt);
   // progress
   const prev=r.lastIdx==null?r.idx:r.lastIdx; const d=idxDelta(G,prev,r.idx); r.prog+=d; r.lastIdx=r.idx;
   r.wrong = (Math.cos(r.heading)*G.TAN[r.idx].z+Math.sin(r.heading)*G.TAN[r.idx].x) < -0.3 && r.speed>3 ? r.wrong+dt : 0;
   // falling / off track resets
   if(way) r.out+=dt; else r.out=0;
-  if(r.out>1.6) resetRacer(r);
-  if(race.go&&!r.finished&&!r.isPlayer){ if(Math.abs(r.speed)<1.2){r.stuck+=dt; if(r.stuck>1.5&&r.reverse<=0)r.reverse=0.9; if(r.stuck>4)resetRacer(r);} else r.stuck=0; }
+  if(r.out>1.6) resetRacer(r,'off track'); else if(r.air>JUMP.airReset) resetRacer(r,'airborne'); else if(r.pos.y<lineHeight(G,r.idx,r.pos)-JUMP.fallReset) resetRacer(r,'fell');
+  if(race.go&&!r.finished&&!r.isPlayer){ if(Math.abs(r.speed)<1.2){r.stuck+=dt; if(r.stuck>1.5&&r.reverse<=0)r.reverse=0.9; if(r.stuck>4)resetRacer(r,'stuck');} else r.stuck=0; }
+}
+function updateVertical(r,dt){
+  const lineY=lineHeight(race.G,r.idx,r.pos);
+  if(r.grounded){
+    const h=surfaceBelow(r.pos,JUMP.snap,lineY);
+    if(!h&&r.pos.y-lineY<JUMP.snap&&r.pos.y-lineY>-JUMP.stepUp&&holdsAtLine(r,lineY)){ r.vy=0; r.pos.y=lineY; r.air=0; return; }
+    if(h){ const y=h.point.y; r.vy=Math.max(-JUMP.maxVy,Math.min(JUMP.maxVy,(y-r.pos.y)/dt)); r.pos.y=y; r.air=0;
+      const n=h.face?h.face.normal.clone().transformDirection(h.object.matrixWorld):null; if(n){ if(n.y<0)n.negate(); r.up.lerp(n,Math.min(1,dt*8)).normalize(); }
+      return; }
+    r.grounded=false; takeOff(r);
+  }
+  r.air+=dt; r.vy-=JUMP.gravity*dt; r.pos.y+=r.vy*dt;
+  r.up.lerp(UP,Math.min(1,dt*2)).normalize();
+  // land when at or below a surface, also while still rising (a steep ramp can climb faster than the jump)
+  const h=surfaceBelow(r.pos,Math.max(0.05,-r.vy*dt),lineY);
+  const floor=h?h.point.y:(holdsAtLine(r,lineY)?lineY:null);
+  if(floor!=null&&r.pos.y<=floor+0.02){ r.pos.y=floor; r.vy=0; r.grounded=true; r.air=0; }
+}
+// Off the edge of a road mesh but not over a real gap: curbs, barriers and shoulders are separate meshes, so the road's
+// height holds there, unless real ground is visible more than holdDepth below (then the kart would look like it floats).
+function holdsAtLine(r,lineY){
+  if(race.gaps.inGap[r.idx])return false;
+  const deep=surfaceBelow(r.pos,60,lineY); return !deep||lineY-deep.point.y<JUMP.holdDepth;
+}
+// leaving the surface over a gap in the road: aim the jump at the point where the road resumes
+function takeOff(r){
+  const G=race.G, end=race.gaps.land[r.idx]; if(end<0)return;
+  const L=G.P[end], d=Math.hypot(L.x-r.pos.x,L.z-r.pos.z)+1, v=Math.max(4,r.speed), t=d/v;
+  const need=(L.y+JUMP.clear-r.pos.y+0.5*JUMP.gravity*t*t)/t;
+  r.vy=Math.max(r.vy,Math.min(JUMP.launchMax,need));
 }
 const wrapAngle=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
 function updateDrift(r,input,dt){
@@ -490,7 +546,7 @@ function aiInput(r,dt,t){
   if(r.reverse>0){r.reverse-=dt; return {throttle:-1,steer:-Math.sign(lateral(G,r.idx,r.pos))};}
   const look=5+Math.floor(Math.max(0,r.speed)*0.28);
   let ti=r.idx+look; ti=G.closed?ti%n:Math.min(n-1,ti);
-  const p=G.P[ti], tt=G.TAN[ti], lane=(r.lane+0.18*Math.sin(t*0.4+r.phase))*G.HW[ti];
+  const p=G.P[ti], tt=G.TAN[ti], lane=(r.lane+0.18*Math.sin(t*0.4+r.phase))*Math.min(G.WL[ti],G.WR[ti]);
   const tx=p.x+tt.z*lane, tz=p.z-tt.x*lane;
   const want=Math.atan2(tx-r.pos.x,tz-r.pos.z), da=wrapAngle(want-r.travel);
   const steer=Math.max(-1,Math.min(1,da*2.4));
@@ -573,10 +629,10 @@ const capYaw=w=>Math.max(-PHYS.maxYaw,Math.min(PHYS.maxYaw,w));
 // impulse as kart-vs-kart with the wall's 1/m = 0: j = (1+e)(v·n) / (1/m + (r×n)²/I), plus capped scrape friction.
 // A kart that hits nose-first is turned away from the wall; a glancing hit just scrapes along it.
 function collideWall(r,dt){
-  const G=race.G, i=r.idx, n=G.n, at=k=>G.HW[G.closed?(k+n)%n:Math.max(0,Math.min(n-1,k))];
-  const wall=(at(i-1)+at(i)+at(i+1))/3*PHYS.wallAt, t=G.TAN[i], h=r.hull, c=capsule(r);
+  const G=race.G, i=r.idx, n=G.n, K=k=>G.closed?(k+n)%n:Math.max(0,Math.min(n-1,k));
+  const avg=A=>(A[K(i-1)]+A[K(i)]+A[K(i+1)])/3*PHYS.wallAt, wallL=avg(G.WL), wallR=avg(G.WR), t=G.TAN[i], h=r.hull, c=capsule(r);
   let pen=0, ex=0, ez=0, side=1;
-  for(const [x,z] of [[c[0],c[1]],[c[2],c[3]]]){ const lat=lateral(G,i,{x,z}), d=Math.abs(lat)+h.rad-wall;
+  for(const [x,z] of [[c[0],c[1]],[c[2],c[3]]]){ const lat=lateral(G,i,{x,z}), d=Math.abs(lat)+h.rad-(lat>0?wallL:wallR);
     if(d>pen){pen=d;ex=x;ez=z;side=lat<0?-1:1;} }
   if(pen<=0) return 0;
   const nx=t.z*side, nz=-t.x*side; // outward, toward the wall
@@ -702,12 +758,14 @@ function buildRace(T,trackKey,get,lineup){
   if(race){ raceScene.remove(race.root); }
   const root=new THREE.Group(); raceScene.add(root);
   const map=get('map_'+trackKey).scene.clone(true); map.scale.setScalar(T.scale); root.add(map); map.updateMatrixWorld(true);
-  const road=[]; const colMat=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});
+  const road=[], ground=[]; const colMat=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});
   map.traverse(o=>{ if(o.isMesh){ if(/mini_?map/i.test(o.name))o.visible=false;
-    if(isRoad(T,o.name)){ const g=o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.computeBoundingBox(); g.computeBoundingSphere();
-      const c=new THREE.Mesh(g,colMat); c.visible=false; c.matrixAutoUpdate=false; c.updateMatrixWorld(true); road.push(c); } }});
+    const isR=isRoad(T,o.name), isG=!isR&&T.ground&&T.ground.contains.some(x=>o.name.includes(x));
+    if(isR||isG){ const g=o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.computeBoundingBox(); g.computeBoundingSphere();
+      const c=new THREE.Mesh(g,colMat); c.visible=false; c.matrixAutoUpdate=false; c.updateMatrixWorld(true); c.userData.road=isR; (isR?road:ground).push(c); } }});
   const G=trackGeom(T);
-  race={T,G,root,road,racers:[],time:0,go:false,running:true,paused:false,count:3.6,startIdx:T.closed?0:6,laps:T.closed?T.laps:1,finishOrder:[],ended:false,endT:0,lastBeep:4};
+  race={T,G,root,road,solid:road.concat(ground),gaps:null,resets:[],racers:[],time:0,go:false,running:true,paused:false,count:3.6,startIdx:T.closed?0:6,laps:T.closed?T.laps:1,finishOrder:[],ended:false,endT:0,lastBeep:4};
+  race.gaps=findGaps(G,road); Object.assign(G,measureWidths(G,road,race.gaps.inGap));
   lineup.forEach((l,slot)=>{ const ko=assemble(buildDriver(get(DRIVERS[l.d].file)),buildKart(KARTS[l.k],get(KARTS[l.k].file)));
     toonify(ko.group,state.toon); ko.group.scale.setScalar(KART.scale); root.add(ko.group);
     const r=makeRacer(slot,l.d,l.k,l.p,ko); r.lane=[0,-0.35,0.3,0.05][slot]; r.band=1; race.racers.push(r); });
@@ -821,11 +879,14 @@ function frame(){ requestAnimationFrame(frame); const dt=Math.min(0.05,clock.get
 addEventListener('resize',resize); resize();
 fetch('tracks.json').then(r=>r.json()).then(j=>{TRACKS=j;}).catch(()=>{ $('bPlay').disabled=true; $('bPlay').textContent='Could not load tracks'; });
 show('sTitle'); setMode('title'); frame();
-window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify,collidePair,collideWall,hullOf,raceCam,DRIFT,
+window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify,collidePair,collideWall,hullOf,raceCam,DRIFT,JUMP,
   tune:{CAM,PHYS,GRID,KART,TUNE,DRIFT,SPEED,regrid,applyKartScale,snapCamera,restart:()=>{ if(race&&state.track)startRace(state.track); },get inRace(){return !!race;}}};
 })();
 </script>
-<script src="tuner.js"></script>
+<script>
+// The tuning panel is a debugging tool: it only loads on the debug page (tune.html, which opens this page with ?tune).
+if(/[?&]tune\b/.test(location.search)){ const s=document.createElement('script'); s.src='tuner.js'; document.body.appendChild(s); }
+</script>
 
 </body>
 </html>

@@ -96,7 +96,7 @@ figcaption b{color:var(--ink);font-weight:600}
     <div class="fact"><b>4</b><span>drivers, Image 2 → Tripo → auto-rig</span></div>
     <div class="fact"><b>4</b><span>karts, Image 2 → Tripo → Smart Segment</span></div>
     <div class="fact"><b>3</b><span>tracks from Sketchfab, CC BY 4.0</span></div>
-    <div class="fact"><b>7</b><span>major shifts in the plan, marked below</span></div>
+    <div class="fact"><b>8</b><span>major shifts in the plan, marked below</span></div>
   </div>
 </section>
 
@@ -128,6 +128,7 @@ figcaption b{color:var(--ink);font-weight:600}
   <a href="#e-2304"><time>Oct 24 · 23:04</time>A tuning panel</a>
   <a href="#e-2322"><time>Oct 24 · 23:22</time>My own camera settings</a>
   <a class="shift" href="#e-2330"><time>Oct 24 · 23:30 · Shift 7</time>Drifting, KartRider style</a>
+  <a class="shift" href="#e-2340"><time>Oct 24 · 23:40 · Shift 8</time>Mountain Run's ground, smaller karts</a>
   <a href="#links"><time>Reference</time>Links and credits</a>
 </nav>
 
@@ -156,6 +157,7 @@ figcaption b{color:var(--ink);font-weight:600}
     <li><b>Walls (me → Claude).</b> Karts now bounce off the road edge instead of driving onto the grass.</li>
     <li><b>Tuning panel (me → Claude).</b> Sliders in the game so I can set the camera, the starting grid and the physics myself.</li>
     <li><b>Drifting (me → Claude).</b> Corners are taken by drifting, as in KartRider, with a boost for a long drift; the AI drifts too.</li>
+    <li><b>Ground and size (me → Claude).</b> Mountain Run's road detection rebuilt with real gravity and jumps; karts two-thirds smaller; the tuning panel moved to a debug page; changes are checked locally before they go online.</li>
   </ol>
 </article>
 
@@ -484,7 +486,7 @@ Kart 4 — Futuristic racer: ... pointed nose, small front wing, rounded rear wi
 <article id="e-2304">
   <time>Oct 24 · 23:04</time>
   <h2>A tuning panel, so I can adjust it myself</h2>
-  <p>I asked for a panel in the game where I can adjust things myself, for example the camera and where the karts stand at the start. It opens with the <code>T</code> key or the "Tune" button in the bottom-left corner, and every slider works while the race runs:</p>
+  <p>I asked Claude for a GUI to debug the game with, where I can adjust things myself, for example the camera and where the karts stand at the start. It is a debugging tool, not part of the game: at 23:40 I asked for it to be taken out of the released game, so it now lives only on a separate debug page (<code>play/tune.html</code>). There it opens with the <code>T</code> key or the "Tune" button in the bottom-left corner, and every slider works while the race runs:</p>
   <ul>
     <li><b>Camera:</b> distance, height, look-ahead, aim height, field of view, extra field of view at speed, how fast it follows turns and hills.</li>
     <li><b>Starting grid:</b> which of the four slots I start in, how far behind the line the first row is, the gap between rows, and how far apart the karts stand sideways.</li>
@@ -538,6 +540,41 @@ Kart 4 — Futuristic racer: ... pointed nose, small front wing, rounded rear wi
       <tr><td>Mountain Run</td><td class="n">41%</td><td class="n">46 s → 51 s</td></tr>
     </tbody></table></div>
   <p>Races are slower now, mostly on the twisty Flower Loop. The opponents also run at 0.9× of their old speed. Both speeds, and everything about the drift, have sliders in the tuning panel, plus an "Auto drift" switch that starts a drift by itself when I steer hard, without the key.</p>
+</article>
+
+<article id="e-2340">
+  <time>Oct 24 · 23:40</time>
+  <h2>Shift 8: Mountain Run's ground, smaller karts, and checking before publishing</h2>
+  <div class="shiftnote"><b>Shift</b>Changes are no longer published after every step. Claude works on a local copy, I check it, and only then does it go to GitHub. The tuning panel leaves the released game and becomes a debug page.</div>
+  <p>I played the game and found it not fun at all. I asked for three things: smaller karts again (two-thirds or half of their size), a fix for Mountain Run, where the terrain and the road were judged wrongly and karts floating in the air still counted as being on the road, and the tuning panel only on a page for my own debugging. I also asked Claude not to upload anything until the local version is right.</p>
+  <h3>1 · What was wrong on Mountain Run</h3>
+  <p>Claude checked, point by point along the racing line, which mesh a kart was standing on. Two problems came out:</p>
+  <ul>
+    <li><b>The racing line ran over a tunnel's ceiling.</b> For about 50 m the line climbed 10 m onto <code>qms_suidaoi_02</code>, the inside of a tunnel roof, while the real road ran underneath. The roof counted as road because its name is spelled <code>suidaoi_02</code>, and the filter only excluded <code>suidao02</code>. So karts drove through the inside of the mountain.</li>
+    <li><b>Every gap was "solved" by floating.</b> Since 20:24, wherever the road mesh had a hole, karts simply followed the racing line's height. On Mountain Run those holes are real: a jump over a 5 m drop to the grass, a steep drop into a second tunnel, and stretches with nothing underneath. Karts glided across all of them in mid-air.</li>
+  </ul>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/2340-tunnel-before.jpg" alt="Before: kart driving on a flat grey surface inside the orange mountain"></button><figcaption><b>Before.</b> The published version at the same spot: the kart drives on the tunnel's ceiling, 32 m up, inside the mountain.</figcaption></figure>
+    <figure><button data-lb><img src="img/2340-tunnel-after.jpg" alt="After: kart driving inside the tunnel with cave walls, a lamp and a wooden barrier"></button><figcaption><b>After.</b> The same spot: the kart is on the real road in the tunnel, at 20.7 m.</figcaption></figure>
+  </div>
+  <h3>2 · The fixes</h3>
+  <ul>
+    <li><b>The racing line was rebuilt</b> from the real road surface, following the road from point to point so a roof overhead is never picked. 86 of its 704 points changed, most of them inside the tunnel.</li>
+    <li><b>Real gravity.</b> Karts now stand on the surface under them, and fly and fall when it drops away. Grass and hillside meshes count as ground only at or below the road's height, so a hill or a tunnel roof is never driven on.</li>
+    <li><b>Jumps.</b> Where the road has a gap, the take-off gets just enough upward speed to reach the far side. On Sky Plaza Climb this turns the place where the road resumes 8.5 m higher into a launch pad. A kart that falls short lands on the ground below and is put back on the track after the gap.</li>
+    <li><b>Walls where the road really ends.</b> When a race loads, the game measures how far the road mesh reaches on each side of the line, and the walls stand there. Before, they followed the line's recorded width, which on Mountain Run let karts drive off the side of a narrow ramp into the air.</li>
+  </ul>
+  <div class="tw"><table>
+    <thead><tr><th>Simulated race</th><th>Floating over ground (&gt;0.3 m)</th><th>Put back on track</th><th>Finish</th></tr></thead>
+    <tbody>
+      <tr><td>Mountain Run</td><td class="n">none</td><td class="n">2 falls at the jump</td><td class="n">all four, 53–55 s</td></tr>
+      <tr><td>Sky Plaza Climb</td><td class="n">none</td><td class="n">none</td><td class="n">23–25 s</td></tr>
+      <tr><td>Flower Loop</td><td class="n">none</td><td class="n">none</td><td class="n">109 s</td></tr>
+    </tbody></table></div>
+  <h3>3 · Smaller karts</h3>
+  <p>Karts are now 0.45× (two-thirds of 0.675×). The camera's distance and height shrank by the same factor, so the kart takes the same place on the screen as with my own camera settings from 23:22, and the road looks wider around it. Half size (0.34×) can be tried with the "Kart size" slider on the debug page.</p>
+  <h3>4 · The debug page</h3>
+  <p>The released game no longer loads the tuning panel at all, so slider values saved in a browser cannot change it either. The panel opens only on <code>play/tune.html</code>.</p>
 </article>
 
 <article id="links">
