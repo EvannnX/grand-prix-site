@@ -96,7 +96,7 @@ figcaption b{color:var(--ink);font-weight:600}
     <div class="fact"><b>4</b><span>drivers, Image 2 → Tripo → auto-rig</span></div>
     <div class="fact"><b>4</b><span>karts, Image 2 → Tripo → Smart Segment</span></div>
     <div class="fact"><b>3</b><span>tracks from Sketchfab, CC BY 4.0</span></div>
-    <div class="fact"><b>8</b><span>major shifts in the plan, marked below</span></div>
+    <div class="fact"><b>11</b><span>major shifts in the plan, marked below</span></div>
   </div>
 </section>
 
@@ -129,6 +129,10 @@ figcaption b{color:var(--ink);font-weight:600}
   <a href="#e-2322"><time>Oct 24 · 23:22</time>My own camera settings</a>
   <a class="shift" href="#e-2330"><time>Oct 24 · 23:30 · Shift 7</time>Drifting, KartRider style</a>
   <a class="shift" href="#e-2340"><time>Oct 24 · 23:40 · Shift 8</time>Mountain Run's ground, smaller karts</a>
+  <a class="shift" href="#e-0130"><time>Oct 25 · 01:30 · Shift 9</time>Slower karts, my own track choice</a>
+  <a href="#e-0145"><time>Oct 25 · 01:45</time>Real start lines, drift, sound and music</a>
+  <a class="shift" href="#e-0205"><time>Oct 25 · 02:05 · Shift 10</time>Driving on Sky Plaza's twisted road</a>
+  <a class="shift" href="#e-oct26"><time>Oct 26 · Shift 11</time>New drivers from the school mascot</a>
   <a href="#links"><time>Reference</time>Links and credits</a>
 </nav>
 
@@ -158,6 +162,10 @@ figcaption b{color:var(--ink);font-weight:600}
     <li><b>Tuning panel (me → Claude).</b> Sliders in the game so I can set the camera, the starting grid and the physics myself.</li>
     <li><b>Drifting (me → Claude).</b> Corners are taken by drifting, as in KartRider, with a boost for a long drift; the AI drifts too.</li>
     <li><b>Ground and size (me → Claude).</b> Mountain Run's road detection rebuilt with real gravity and jumps; karts two-thirds smaller; the tuning panel moved to a debug page; changes are checked locally before they go online.</li>
+    <li><b>Speed and track choice (me → Claude).</b> Half the real speed with the same speedometer, much slower opponents, and the track I pick is the track I race.</li>
+    <li><b>Start lines, drift and sound (me → Claude).</b> Races start and finish at the checkered lines in the maps; a sideways drift at any speed with smoke; a new engine sound and original background music.</li>
+    <li><b>Twisted road (me → Claude).</b> Karts drive along the road surface in 3D, so they follow Sky Plaza's banked and upside-down road; the camera tilts with them; the engine is quieter than the music.</li>
+    <li><b>Consent, with Prof. Fedtke (me + professor), then Image 2 (me).</b> We talked about consent again; I made four new drivers from NYU Shanghai's mascot instead of the leaders.</li>
   </ol>
 </article>
 
@@ -575,6 +583,150 @@ Kart 4 — Futuristic racer: ... pointed nose, small front wing, rounded rear wi
   <p>Karts are now 0.45× (two-thirds of 0.675×). The camera's distance and height shrank by the same factor, so the kart takes the same place on the screen as with my own camera settings from 23:22, and the road looks wider around it. Half size (0.34×) can be tried with the "Kart size" slider on the debug page.</p>
   <h3>4 · The debug page</h3>
   <p>The released game no longer loads the tuning panel at all, so slider values saved in a browser cannot change it either. The panel opens only on <code>play/tune.html</code>.</p>
+</article>
+
+<article id="e-0130">
+  <time>Oct 25 · 01:30</time>
+  <h2>Shift 9: slower karts, and my own track choice</h2>
+  <div class="shiftnote"><b>Shift</b>The 10-second map vote from the first idea is gone. The player picks the track, and that track is raced; the AI drivers no longer vote, and nothing is chosen at random.</div>
+  <p>The karts still drove too fast for me. I asked for the real speed to be cut in half while the speedometer keeps showing the same numbers, for the AI opponents to be at least two-thirds slower, and for the track I pick to be the track we race, with no vote and no random choice.</p>
+  <h3>1 · Speed</h3>
+  <ul>
+    <li><b>Player:</b> real top speed and acceleration are now half of before (a Classic tops out at about 13 m/s instead of 26). The speedometer now multiplies by 12 instead of 6, so it still reads about 155 km/h at top speed.</li>
+    <li><b>Opponents:</b> 0.3× of the original stats instead of 0.9×, a third of what they had. They are now clearly slower than me.</li>
+    <li>Things tied to speed were scaled down too: drifting starts from 3 m/s instead of 8, the drift's speed loss and boost push are halved, and the camera's field of view widens over the new speed range.</li>
+  </ul>
+  <h3>2 · Choosing a track</h3>
+  <p>The vote screen is now "Choose a track". Clicking a card starts that track at once. There is no timer, no AI votes and no tie-break.</p>
+  <h3>3 · Jumps at low speed</h3>
+  <p>Slower karts showed weak spots in the 23:40 jumps. Claude traced each case with single karts at 4, 7 and 13 m/s, from three positions across the road, and fixed them one by one:</p>
+  <ul>
+    <li><b>Too slow to clear a gap.</b> A take-off over a gap now gets at least 8 m/s forward, like a real jump pad.</li>
+    <li><b>Hitting a wall in the air</b> took away most of a kart's speed, so it fell short. In the air over a gap, a kart now keeps its take-off speed.</li>
+    <li><b>Landing off-center.</b> Where the racing line bends through a gap, a kart flying straight landed beside the narrow ramps. Now it takes off pointing at the landing spot and keeps steering toward it in the air. AI karts also move to the middle of the road before a jump.</li>
+    <li><b>The ledge into Mountain Run's second tunnel</b> is a 4.3 m drop onto a lower road. Karts landing there were counted as fallen, because the game compared them with the upper road's height. Near a gap, the road at the landing point now counts too.</li>
+    <li><b>Sky Plaza's launch pad</b> has a real ramp a little off the line's center. Slow, heavy Buggies drove up it and were reset while still on it. A kart standing on road is now never counted as fallen. Karts also no longer bump each other in the middle of a jump.</li>
+  </ul>
+  <div class="tw"><table>
+    <thead><tr><th>Full simulated race</th><th>Put back on track</th><th>Finish</th></tr></thead>
+    <tbody>
+      <tr><td>Sky Plaza Climb</td><td class="n">none</td><td class="n">about 62 s</td></tr>
+      <tr><td>Mountain Run</td><td class="n">1 fall, at the narrow ramps between the two jumps</td><td class="n">about 139 s</td></tr>
+      <tr><td>Flower Loop (3 laps)</td><td class="n">none</td><td class="n">194–218 s</td></tr>
+    </tbody></table></div>
+  <p>Races now take two to three times longer than before. On the debug page the "Your speed" and "Opponents' speed" sliders go down to 0.1×, to try other values.</p>
+</article>
+
+<article id="e-0145">
+  <time>Oct 25 · 01:45</time>
+  <h2>Real start lines, a proper drift, and sound</h2>
+  <p>Five requests at once: the opponents at 0.5× instead of 0.3×; a new engine sound, because the old one was unpleasant; a drift that works at any speed and looks like a slide instead of just turning; background music in the spirit of KartRider or an anime soundtrack; and races that start and end at each map's own checkered line.</p>
+  <h3>1 · The checkered lines in the maps</h3>
+  <p>The map textures are atlases: one image holds many small pictures. Claude looked for checkered patches in them, then for the triangles that use those patches, then for where those triangles sit along the racing line.</p>
+  <ul>
+    <li><b>Mountain Run:</b> a red-and-white strip, <code>road_qms_qsd</code>, in two pieces: the start at point 23 and the finish at point 677, under a red torii gate. Races used to start at point 6 and end at 701.</li>
+    <li><b>Flower Loop:</b> an orange-and-white checkered band at point 363, under the JARAKA gate. Laps now count from there instead of from point 0.</li>
+    <li><b>Sky Plaza Climb:</b> no checkered line on the road was found. The only checker texture is wall decoration inside a corridor. The start and finish stay where they were.</li>
+  </ul>
+  <p>The grid now stands just behind the line (the first row 2.6 m back, because the strip itself is about 3 m deep).</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/0145-mountain-start-line.jpg" alt="Red and white checkered start line across the road, seen from above"></button><figcaption><b>Mountain Run start line</b>, from above.</figcaption></figure>
+    <figure><button data-lb><img src="img/0145-mountain-finish-line.jpg" alt="Checkered finish line under a red torii gate, seen from above"></button><figcaption><b>Mountain Run finish line</b>, under the torii gate.</figcaption></figure>
+    <figure><button data-lb><img src="img/0145-flower-start-line.jpg" alt="Orange checkered line under the JARAKA gate"></button><figcaption><b>Flower Loop start line</b>, under the JARAKA gate.</figcaption></figure>
+  </div>
+  <h3>2 · A drift that slides</h3>
+  <p>The 23:30 drift turned the kart's body and let the path follow, scaled down at low speed, so it mostly looked like turning. Now, while drifting, the path curves at a fixed rate and the body sits about 35° sideways to it, at any speed from 1 m/s. Steering into the corner tightens the drift; steering out of it opens it. Smoke comes off the rear wheels: white, then blue at a level-1 boost, orange at level 2.</p>
+  <div class="gal one">
+    <figure><button data-lb><img src="img/0145-new-drift.jpg" alt="Kart sliding sideways with blue smoke at the rear wheels"></button><figcaption><b>The new drift on Flower Loop.</b> 36° sideways to the path; blue smoke and gauge show a level-1 boost.</figcaption></figure>
+  </div>
+  <h3>3 · Engine sound and music</h3>
+  <ul>
+    <li><b>Engine:</b> still made in the browser, but now as a small two-stroke engine: revs climb through three gears, two layers pass through a soft clipper and a filter that opens with the revs, and the volume pulses at the firing rate.</li>
+    <li><b>Music:</b> KartRider's music and anime soundtracks are copyrighted, so they cannot go into a published game. Claude wrote an original loop instead: 16 bars at 150 BPM, with drums, bass, an arpeggio and a lead melody, also generated in the browser. If a licensed track is saved as <code>play/music.mp3</code>, the game plays that instead. <code>M</code> mutes sound and music.</li>
+  </ul>
+  <h3>4 · Testing</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Full simulated race</th><th>Put back on track</th><th>Finish</th><th>Time drifting</th></tr></thead>
+    <tbody>
+      <tr><td>Sky Plaza Climb</td><td class="n">none</td><td class="n">38–42 s</td><td class="n">13%</td></tr>
+      <tr><td>Mountain Run</td><td class="n">none</td><td class="n">all four, 85–97 s</td><td class="n">20%</td></tr>
+      <tr><td>Flower Loop (3 laps)</td><td class="n">none</td><td class="n">122–137 s</td><td class="n">41%</td></tr>
+    </tbody></table></div>
+  <p>One more fix came out of these runs: a kart taking off from Sky Plaza's real launch ramp, which sits below the line drawn across the gap, was counted as fallen. A fall is now also measured from where the kart last stood. Claude could not listen to the sound itself; it checked that the engine and the music produce a signal, so how they sound is for me to judge.</p>
+</article>
+
+<article id="e-0205">
+  <time>Oct 25 · 02:05</time>
+  <h2>Shift 10: driving on Sky Plaza's twisted road</h2>
+  <div class="shiftnote"><b>Shift</b>Karts no longer move in a flat world with "down" always pointing down. They drive along whatever surface is under them, in 3D, and the camera tilts with them. Sky Plaza turns out to be a road that twists into a wall ride and ends upside down.</div>
+  <p>On the space map the camera stayed upright even when my kart was driving sideways, and the kart kept passing through the road at other heights and jumping from place to place. I asked for the camera to tilt with the road, and for Claude to work out again how a kart should travel on this map's curved surface. I also asked for the engine to be quieter than the music.</p>
+  <h3>What the road really does</h3>
+  <p>Claude measured the road's tilt at every point of the racing line. From point 145 the road banks up to 80°, almost a wall ride; at point 200 it passes vertical, and from point 230 to the finish it is upside down. The drawn side of the road mesh agrees: it faces down there. Two things followed from this:</p>
+  <ul>
+    <li><b>The old physics could not drive it.</b> It looked for the road straight down, kept karts upright and the camera vertical. On a road leaning 80° that finds the wrong spot or nothing, so karts jumped between levels, were put back on the track, and drove on the back of the upside-down road.</li>
+    <li><b>The "launch pad" at 23:40 was not a gap at all.</b> It was the steepest part of the bank, where looking straight down misses the road. Measured along the road's own normal, Sky Plaza has no gaps.</li>
+  </ul>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/0205-banked-before.jpg" alt="Before: kart stuck sideways on a steep road, camera upright"></button><figcaption><b>Before</b> (published version), point 172: the kart lies on its side against the banked road while the camera stays upright.</figcaption></figure>
+    <figure><button data-lb><img src="img/0205-banked-after.jpg" alt="After: kart driving on the banked road, view tilted with it"></button><figcaption><b>After</b>, same point: the road is level on screen and the station tilts instead.</figcaption></figure>
+  </div>
+  <h3>How karts move now</h3>
+  <ul>
+    <li><b>Each kart has its own "up"</b>, the road's normal under it. Steering turns the kart around that axis, and the road is found along the kart's own "down".</li>
+    <li><b>Gravity</b> pulls straight down on gently sloped road, and toward the road where it banks more than about 37°, as on an anti-gravity track. On the other maps nothing changes.</li>
+    <li><b>Walls, lanes and the grid</b> are measured across the road's width instead of horizontally, so they bank with it.</li>
+    <li><b>Collisions</b> use the same impulse maths as before, written with 3D vectors, and karts spin about their own up direction.</li>
+    <li><b>The camera</b> keeps its place behind the kart in the kart's frame and gently follows the road's tilt.</li>
+  </ul>
+  <p>The rewrite broke Mountain Run at first, and fixing it showed three more problems:</p>
+  <ul>
+    <li><b>Flipped normals.</b> One odd reading near a ramp turned Mountain Run's normals upside down for the rest of the track. Now only Sky Plaza is marked as a banked track; elsewhere normals always point up.</li>
+    <li><b>Climbing walls.</b> Karts at the road edge took the steep side face of a curb as ground and climbed it. A face more than 45° off the road's normal no longer counts as ground.</li>
+    <li><b>Jumps in position.</b> Right after a gap the walls close in from the line's full width to the measured road. Karts were pushed back 2–4 m in one frame; now they slide back in gradually. Karts in a jump also keep steering toward the line until they land, so they no longer miss the narrow ramps where the line bends.</li>
+  </ul>
+  <div class="tw"><table>
+    <thead><tr><th>Full simulated race</th><th>Jumps in position (&gt;1.2 m per frame)</th><th>Put back on track</th><th>Finish</th></tr></thead>
+    <tbody>
+      <tr><td>Sky Plaza Climb</td><td class="n">none</td><td class="n">none</td><td class="n">43–46 s, all four, through the upside-down section</td></tr>
+      <tr><td>Mountain Run</td><td class="n">one, 1.8 m</td><td class="n">none</td><td class="n">90–92 s</td></tr>
+      <tr><td>Flower Loop (3 laps)</td><td class="n">none</td><td class="n">none</td><td class="n">135–136 s</td></tr>
+    </tbody></table></div>
+  <h3>Engine and music</h3>
+  <p>Measured offline, the engine at full throttle had been about six times louder than the music. Now it is half as loud as the music, and the overall volume went up so the game is not quieter.</p>
+</article>
+
+<article id="e-oct26">
+  <time>Oct 26</time>
+  <h2>Shift 11: new drivers from the school mascot</h2>
+  <div class="shiftnote"><b>Shift</b>The drivers stop being cartoon versions of NYU Shanghai's leaders. Four new characters, all based on the school's mascot, take their place.</div>
+  <p>In class on October 26 the professor and I came back to consent. On October 21 we had settled on showing the leaders only as cartoons and never naming them in the game, but that does not answer whether they agreed to be in it. So I sent NYU Shanghai's mascot to Image 2 and made four new characters. They are not anyone's likeness, so the question goes away.</p>
+  <div class="gal one">
+    <figure><button data-lb><img src="img/1026-mascot-characters.png" alt="Four versions of the purple dragon mascot: cheering with a banner, in a crab hat, in a racing helmet on a phone screen, and in a graduation gown"></button><figcaption><b>The four new characters (Image 2).</b> Cheering, in a crab hat, in a blue racing helmet, and as a graduate.</figcaption></figure>
+  </div>
+  <p>These are flat pictures, and the game needs rigged 3D models, so the October 21 pipeline runs again. Claude cut the sheet into four pictures and wrote a T-pose prompt for each, keeping the October 21 rules: a strict T-pose, flat light on white, and nothing touching the body. Props that would fuse into the mesh (the banner, the batons, the phone) are left out. The graduate's cap goes on its head so its hands are free. The pictures only show head and shoulders, so Image 2 has to invent a body in the same style.</p>
+  <h3>The four new drivers, in 3D</h3>
+  <p>Image 2 gave each character a full body in the violet racing suit with white stripes, the same outfit as the old drivers, as a preview with a helmet and a thumbs-up, and as a T-pose. I turned the T-poses into 3D models in Tripo and rigged them there.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1026b-q1-image2.jpg" alt="Qilin, preview and T-pose"></button><figcaption><b>Qilin</b> · preview and T-pose (Image 2).</figcaption></figure>
+    <figure><button data-lb><img src="img/1026b-q2-image2.jpg" alt="Crab Qilin, preview and T-pose"></button><figcaption><b>Crab Qilin.</b></figcaption></figure>
+    <figure><button data-lb><img src="img/1026b-q3-image2.jpg" alt="Grad Qilin, preview and T-pose"></button><figcaption><b>Grad Qilin.</b></figcaption></figure>
+    <figure><button data-lb><img src="img/1026b-q4-image2.jpg" alt="Delivery Qilin, preview and T-pose"></button><figcaption><b>Delivery Qilin</b> (外卖 Qilin), in a food-delivery rider's helmet.</figcaption></figure>
+  </div>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1026b-q1-tripo.jpg" alt="Qilin model in Tripo"></button><figcaption><b>Qilin in Tripo.</b> 98,616 faces.</figcaption></figure>
+    <figure><button data-lb><img src="img/1026b-q2-tripo.jpg" alt="Crab Qilin model in Tripo"></button><figcaption><b>Crab Qilin.</b> 97,981 faces.</figcaption></figure>
+    <figure><button data-lb><img src="img/1026b-q3-tripo.jpg" alt="Grad Qilin model in Tripo while retargeting"></button><figcaption><b>Grad Qilin</b>, while rigging. 94,394 faces.</figcaption></figure>
+    <figure><button data-lb><img src="img/1026b-q4-tripo.jpg" alt="Delivery Qilin model in Tripo"></button><figcaption><b>Delivery Qilin.</b> 95,680 faces.</figcaption></figure>
+  </div>
+  <p>Claude checked the four files. Each is rigged with a 65- or 66-bone Mixamo-style skeleton and came with one Tripo animation (clap, frightened, walk, run), and each was about 10 MB with 4096-pixel textures. Claude compressed them the same way as the old drivers, to about 2.2 MB each. Only the colour texture is kept, at 1024 pixels, because the cartoon shading does not use the normal and metal maps. The animations are dropped, because the game poses the bones itself, and the vertex data is stored compactly. The game finds bones by the end of their names, so the seating code from October 24 worked unchanged: all four sat properly in every kart without adjustments.</p>
+  <div class="gal one">
+    <figure><button data-lb><img src="img/1026b-drivers-seated.jpg" alt="The four new drivers seated in the four karts, from the front three-quarter and from the side"></button><figcaption><b>Seated drivers.</b> Each new driver in a kart, from the front three-quarter and the side, the same layout as the October 24 picture.</figcaption></figure>
+  </div>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1026b-select-screen.jpg" alt="Select screen with the four new drivers"></button><figcaption><b>The new select screen.</b> The pictures are the Image 2 previews.</figcaption></figure>
+    <figure><button data-lb><img src="img/1026b-race-crab.jpg" alt="Crab Qilin racing on Flower Loop"></button><figcaption><b>Crab Qilin racing</b> on Flower Loop.</figcaption></figure>
+  </div>
+  <p>The drivers now have names in the game (Qilin, Crab Qilin, Grad Qilin, Delivery Qilin), since they are no longer real people. The old leader models and portraits are deleted from the game's files, under new file names so that no browser shows them from its cache.</p>
 </article>
 
 <article id="links">

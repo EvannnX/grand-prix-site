@@ -63,7 +63,7 @@ kbd{font:800 13px/1 var(--display);background:var(--panel-2);border:2px solid va
 .stagebox{position:relative;border-radius:20px;border:3px solid var(--violet-2);overflow:hidden;aspect-ratio:4/3;max-width:100%;background:transparent}
 .stagebox .tag{position:absolute;left:12px;top:10px;font:800 14px/1 var(--display);color:var(--ink);background:rgba(23,11,38,.7);padding:6px 10px 4px;border-radius:10px}
 .stagebox .msg{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-weight:700}
-/* vote */
+/* track choice */
 .votes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;width:min(980px,100%)}
 @media (max-width:720px){.votes{grid-template-columns:minmax(0,1fr)}}
 .vcard{background:var(--panel);border:3px solid var(--violet-2);border-radius:18px;padding:12px;display:grid;gap:8px;cursor:pointer;color:var(--ink);text-align:left;font:inherit;min-width:0}
@@ -116,7 +116,7 @@ tr.me td{color:var(--lime)}
 
 <section class="screen dim" id="sTitle">
   <h1 class="logo">NYU Shanghai<small>GRAND PRIX</small></h1>
-  <p class="sub">Pick a driver and a kart, vote on a track, then race three AI drivers. Built with AI-generated drivers and karts for the AI Writathon.</p>
+  <p class="sub">Pick a driver, a kart and a track, then race three AI drivers. Built with AI-generated drivers and karts for the AI Writathon.</p>
   <div class="row">
     <span class="label">AI difficulty</span>
     <div class="seg" role="group" aria-label="Difficulty"><button data-diff="0" aria-pressed="false">Easy</button><button data-diff="1" aria-pressed="true">Normal</button><button data-diff="2" aria-pressed="false">Hard</button></div>
@@ -126,7 +126,7 @@ tr.me td{color:var(--lime)}
     <div class="seg" role="group" aria-label="Shading"><button id="toonOn" aria-pressed="true">Cartoon</button><button id="toonOff" aria-pressed="false">As exported</button></div>
   </div>
   <div class="row"><button class="btn" id="bPlay">Play</button><button class="btn ghost" id="bCredits">Credits</button><a class="btn ghost" href="../docs/index.html" style="text-decoration:none">Documentation</a></div>
-  <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys to drive · hold <kbd>Shift</kbd> or <kbd>Space</kbd> while turning to drift · <kbd>R</kbd> back on track · <kbd>Esc</kbd> pause · <kbd>M</kbd> sound</p>
+  <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys to drive · hold <kbd>Shift</kbd> or <kbd>Space</kbd> while turning to drift · <kbd>R</kbd> back on track · <kbd>Esc</kbd> pause · <kbd>M</kbd> sound and music</p>
   <p class="keys" id="touchNote" hidden>This game needs a keyboard.</p>
 </section>
 
@@ -139,15 +139,15 @@ tr.me td{color:var(--lime)}
       <div class="cards" id="karts"></div>
     </div>
     <div class="panel clear">
-      <div class="stagebox" id="previewBox"><span class="tag" id="previewTag">Driver 01 · Classic</span><div class="msg" id="previewMsg">Loading preview</div></div>
-      <div class="row"><button class="btn ghost" id="bBack1">Back</button><button class="btn" id="bToVote">Vote on a track</button></div>
+      <div class="stagebox" id="previewBox"><span class="tag" id="previewTag">Qilin · Classic</span><div class="msg" id="previewMsg">Loading preview</div></div>
+      <div class="row"><button class="btn ghost" id="bBack1">Back</button><button class="btn" id="bToVote">Choose a track</button></div>
     </div>
   </div>
 </section>
 
 <section class="screen dim" id="sVote" hidden>
-  <div class="row"><h2 style="font-size:40px">Vote for a track</h2><span class="timer" id="voteTimer">10</span></div>
-  <p class="sub" id="voteNote">Click a track. The three AI drivers vote too. A tie is settled at random.</p>
+  <h2 style="font-size:40px">Choose a track</h2>
+  <p class="sub" id="voteNote">Click a track to race on it.</p>
   <div class="votes" id="votes"></div>
 </section>
 
@@ -182,7 +182,7 @@ tr.me td{color:var(--lime)}
   <div class="panel wide credits">
     <h2 style="font-size:36px">Credits</h2>
     <p><b>Game design, prompts, 3D cleanup and part labelling:</b> Bang Xiao, for the AI Writathon in Perspectives on the Humanities, NYU Shanghai, Fall 2026.</p>
-    <p><b>Drivers:</b> cartoon caricatures generated with Image 2 and turned into rigged 3D models with Tripo AI. They are shown without names, as agreed with the course instructor.</p>
+    <p><b>Drivers:</b> four versions of the NYU Shanghai mascot, generated with Image 2 from the mascot and turned into rigged 3D models with Tripo AI.</p>
     <p><b>Karts:</b> generated with Image 2 and Tripo AI, split into parts with Tripo Smart Segment.</p>
     <p><b>Tracks</b> (CC BY 4.0, by <a href="https://sketchfab.com/amogusstrikesback2" target="_blank" rel="noopener">amogusstrikesback2</a> on Sketchfab, track names in this game are new):
       <a href="https://sketchfab.com/3d-models/map-njxz-780bfdf4195e4337bec208b7ef2736d0" target="_blank" rel="noopener">Map_njxz</a> (Flower Loop),
@@ -197,12 +197,15 @@ tr.me td{color:var(--lime)}
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/utils/SkeletonUtils.js"></script>
+<script src="audio.js"></script>
+<script src="fx.js"></script>
 <script>
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
 // ---------- data ----------
-const DRIVERS=[1,2,3,4].map(i=>({id:i,label:'Driver 0'+i,file:'driver'+i,img:'d'+i+'.jpg'}));
+// four versions of the NYU Shanghai mascot (they replaced the leader caricatures on Oct 26, for consent)
+const DRIVERS=['Qilin','Crab Qilin','Grad Qilin','Delivery Qilin'].map((label,k)=>({id:k+1,label,file:'qilin'+(k+1),img:'qilin'+(k+1)+'.jpg'}));
 const KARTS=[
  {id:1,name:'Classic',desc:'Open-frame go-kart',file:'kart1',hubs:{"lf":[0.2558,0.106,0.2196],"rf":[-0.2545,0.1061,0.2195],"lr":[0.2371,0.1155,-0.3091],"rr":[-0.2338,0.1155,-0.3089]},radius:{"lf":0.106,"rf":0.106,"lr":0.1099,"rr":0.1099},steerCenter:[0.0005, 0.2896, 0.1658],wheels:{lf:'tripo_part_6',rf:'tripo_part_2',lr:'tripo_part_8',rr:'tripo_part_10'},
   steer:['tripo_part_41','tripo_part_22','tripo_part_42','tripo_part_43','tripo_part_64','tripo_part_71'],steerAxis:[-0.014,0.644,-0.765],seat:[0,0.15,-0.08],
@@ -216,37 +219,41 @@ const KARTS=[
  {id:4,name:'Racer',desc:'Winged futuristic racer',file:'kart4',hubs:{"lf":[0.2365,0.1057,0.2265],"rf":[-0.2368,0.1059,0.2259],"lr":[0.2342,0.1067,-0.2592],"rr":[-0.2364,0.1066,-0.2593]},radius:{"lf":0.1055,"rf":0.1055,"lr":0.1067,"rr":0.1066},steerCenter:[-0.0004, 0.2296, 0.1042],wheels:{lf:'tripo_part_4',rf:'tripo_part_1',lr:'tripo_part_19',rr:'tripo_part_31'},
   steer:['tripo_part_15'],steerAxis:[-0.001,0.38,-0.925],seat:[0,0.14,-0.07],
   mass:0.9,stats:{speed:5,accel:2,grip:4,offroad:1}}];
-const FILE_MB={driver1:3.1,driver2:3.1,driver3:3.2,driver4:3.1,kart1:3.1,kart2:3.6,kart3:2.9,kart4:4.1,map_njxz:7.7,map_qms:6.2,map_tkgcz:6.4};
+const FILE_MB={qilin1:2.2,qilin2:2.3,qilin3:2.2,qilin4:2.2,kart1:3.1,kart2:3.6,kart3:2.9,kart4:4.1,map_njxz:7.7,map_qms:6.2,map_tkgcz:6.4};
 const DRIVER_SCALE=0.72;
 const KART={scale:0.45}; // kart + driver size in the race (the tuning panel can change it live)
 // Starting grid: first row's distance behind the start line, gap between rows, sideways offset as a fraction of the
 // road half-width, and the player's slot (0 front-left, 1 front-right, 2 back-left, 3 back-right).
-const GRID={front:1.6,rowGap:3.2,sideFrac:0.35,playerSlot:3};
+const GRID={front:2.6,rowGap:3.2,sideFrac:0.35,playerSlot:3};
 const TUNE={hold:false}; // the tuning panel holds the countdown while it is open
 // Collision physics: fixed sub-step, bounciness, side-swipe friction, how fast sideways knock and spin bleed off, spin cap,
 // max height gap for contact, impulse that plays a bump sound, spin inertia boost (game speeds are huge for a 0.5 m kart).
 const PHYS={dt:1/120,restitution:0.35,friction:0.25,knockGrip:4,yawDamp:5,maxYaw:3,contactDy:0.7,thud:2.5,spinInertia:8,
-  wallAt:1.0,wallRestitution:0.3,wallFriction:0.3,wallAlign:8};
+  wallAt:1.0,wallRestitution:0.3,wallFriction:0.3,wallAlign:8,wallPushMax:0.08};
 // wallAt: invisible walls at the road edge (fraction of the racing line's half-width); wallAlign: how fast a kart touching
 // a wall swings parallel to it (karts only turn while moving, so without this a kart nosed into a wall stays pinned).
+// wallPushMax: the most a wall moves a kart back per physics step (m), so walls closing in after a gap do not make it jump.
 // Chase camera (Mario Kart style): distance behind, height, look-ahead point, base FOV, extra FOV at top speed,
-// how fast the view swings round after the kart turns, and how fast it follows height changes.
-const CAM={back:0.8,up:0.47,lookAhead:1.47,lookUp:0.2,fov:69,fovBoost:12,fovSpeed:30,yawRate:7,posRate:12,driftLook:0.35};
-// Drift (KartRider style): hold Shift or Space while steering. The kart body swings into the corner while its direction
-// of travel lags behind, so it slides sideways. bias/steer: body turn rate in a drift (steering into the corner tightens
-// it, counter-steering opens it); grip/normalGrip: how fast travel catches up with the body; maxAngle: largest slide angle;
-// drag: speed lost per second while sliding. Holding a drift for chargeTime (level 1) or twice that (level 2) gives a
-// mini-turbo on release. auto: drift starts by itself when steering hard at speed.
-const DRIFT={minSpeed:8,minSteer:0.3,bias:1.3,steer:1.0,grip:2.2,normalGrip:14,maxAngle:0.75,drag:2.5,
-  chargeTime:0.7,boostTime:0.8,boostPower:0.3,boostKick:3,auto:0,autoSteer:0.8,autoSpeed:14,aiCurve:0.55};
-// Speed multipliers on top of each kart's stats: the player, and the AI opponents.
-const SPEED={player:1,ai:0.9};
+// how fast the view swings round after the kart turns, and how fast it tilts with the road (posRate).
+const CAM={back:0.8,up:0.47,lookAhead:1.47,lookUp:0.2,fov:69,fovBoost:12,fovSpeed:14,yawRate:7,posRate:12,driftLook:0.35};
+// Drift (KartRider style): hold Shift or Space while steering, at any speed. In a drift the path curves at turn rad/s
+// (steering into the corner adds steer, counter-steering takes it away) while the body swings to angle rad sideways of
+// the path (+/- angleSteer with steering) at swing per second, so the kart visibly slides. drag: speed lost per second.
+// Letting go points the path where the body points. Holding a drift for chargeTime (level 1) or twice that (level 2)
+// gives a mini-turbo on release. auto: drift starts by itself when steering hard at speed.
+const DRIFT={minSpeed:1,minSteer:0.3,turn:1.4,steer:0.9,angle:0.6,angleSteer:0.25,swing:10,normalGrip:14,maxAngle:0.75,drag:0.8,
+  chargeTime:0.7,boostTime:0.8,boostPower:0.3,boostKick:1.5,auto:0,autoSteer:0.8,autoSpeed:4,aiCurve:0.55};
+// Speed multipliers on top of each kart's stats (top speed and acceleration): the player, and the AI opponents.
+// Real speed is half of the original stats; the speedometer shows km/h at display × m/s, so it reads as before.
+const SPEED={player:0.5,ai:0.5,display:12};
 // Vertical motion: karts stick to the surface under them (road, or the ground meshes a track lists) and fly under
 // gravity when it drops away. snap: how far the surface may drop in one step and still count as "still on it";
 // stepUp: how high a lip can be driven onto. Where the road mesh has a gap (a jump in the original maps) the take-off gets
-// just enough upward speed to clear it (clear: margin over the landing, launchMax cap; Sky Plaza's launch pad needs ~20 m/s). A kart that falls more than fallReset
-// below the racing line, or is airborne longer than airReset seconds, is put back on the track.
-const JUMP={gravity:18,snap:0.5,stepUp:0.6,clear:0.5,maxVy:9,fallReset:3,airReset:3,roadBand:3,groundAbove:0.5,holdDepth:1.2,launchMax:25};
+// just enough upward speed to clear it (clear: margin over the landing, launchMax cap; Sky Plaza's launch pad needs ~20 m/s),
+// and at least launchSpeed forward, so a slow kart is not left short. A kart that falls more than fallReset
+// below the racing line, or is airborne longer than airReset seconds, is put back on the track. Where the road banks
+// more than about 37° (normal's height below flatY), gravity pulls toward the road instead of straight down.
+const JUMP={gravity:18,snap:0.5,stepUp:0.6,clear:0.5,maxVy:9,fallReset:3,airReset:3,roadBand:3,groundAbove:0.5,holdDepth:1.2,launchMax:25,launchSpeed:8,airSteer:4,flatY:0.8,maxSurfaceTilt:0.7,popUp:0.3}; // maxSurfaceTilt: cos 45°; popUp: below this a landing snaps, above it the kart hops up
 const DIFF=[{name:'Easy',top:0.80,band:0.10},{name:'Normal',top:0.92,band:0.06},{name:'Hard',top:1.0,band:0.03}];
 const state={diff:1,toon:true,driver:0,kart:0,track:null,sound:true};
 let TRACKS=null;
@@ -381,61 +388,109 @@ const sun=new THREE.DirectionalLight(0xffffff,0.9); sun.position.set(30,60,20); 
 let race=null;
 const ray=new THREE.Raycaster(); const DOWN=V(0,-1,0);
 
+// Track frame along the racing line: P (centre), T (direction), N (road normal), L (left = N × T). On flat tracks N is
+// straight up; on Sky Plaza the road banks up to ~80°, so everything below measures across and above the road with
+// these vectors instead of in the horizontal plane.
 function trackGeom(T){
   const S=T.scale, n=T.pts.length, P=[], HW=[], TAN=[];
   for(let i=0;i<n;i++){P.push(V(T.pts[i][0]*S,T.pts[i][1]*S,T.pts[i][2]*S));HW.push(T.hw[i]*S);}
-  for(let i=0;i<n;i++){const a=P[T.closed?(i-1+n)%n:Math.max(0,i-1)], b=P[T.closed?(i+1)%n:Math.min(n-1,i+1)]; const t=V(b.x-a.x,0,b.z-a.z).normalize(); TAN.push(t);}
-  return {P,HW,TAN,n,closed:T.closed};
+  for(let i=0;i<n;i++){const a=P[T.closed?(i-1+n)%n:Math.max(0,i-1)], b=P[T.closed?(i+1)%n:Math.min(n-1,i+1)]; TAN.push(V().subVectors(b,a).normalize());}
+  return {P,HW,TAN,n,closed:T.closed,N:P.map(()=>V(0,1,0)),L:TAN.map(t=>V(t.z,0,-t.x).normalize())};
+}
+// Road normal at each line point: cast toward the road along the previous point's normal (so a banked road is found
+// even when nearly vertical), keep normals pointing the same way as their neighbours, fill gaps, then smooth.
+// Only a track marked "banked" (Sky Plaza) may tilt past vertical; elsewhere normals point up, so one odd reading
+// near a ramp cannot flip the rest of the track upside down.
+function computeFrames(G,road,banked){
+  const raw=new Array(G.n).fill(null); let guess=V(0,1,0);
+  for(let i=0;i<G.n;i++){ const p=G.P[i];
+    for(let pass=0;pass<2;pass++){ rayFrom.copy(p).addScaledVector(guess,2.5); ray.set(rayFrom,guess.clone().negate()); ray.far=5;
+      const h=ray.intersectObjects(road,false).sort((a,b)=>a.point.distanceTo(p)-b.point.distanceTo(p))[0];
+      if(!h||!h.face||h.point.distanceTo(p)>2.5)break;
+      const nn=h.face.normal.clone().transformDirection(h.object.matrixWorld); if(banked?nn.dot(guess)<0:nn.y<0)nn.negate();
+      if(!banked&&nn.y<0.5)break; raw[i]=nn; guess=nn.clone(); } }
+  let last=null; for(let i=0;i<G.n;i++){ if(raw[i]){last=i;continue;} let j=i; while(j<G.n&&!raw[j])j++;
+    const a=last!=null?raw[last]:(j<G.n?raw[j]:V(0,1,0)), b=j<G.n?raw[j]:a;
+    for(let k=i;k<j;k++){ const f=(k-i+1)/(j-i+1); raw[k]=a.clone().lerp(b,f).normalize(); } i=j-1; }
+  const K=k=>G.closed?(k+G.n)%G.n:Math.max(0,Math.min(G.n-1,k));
+  for(let i=0;i<G.n;i++){ const n=V(); for(let d=-2;d<=2;d++)n.add(raw[K(i+d)]); n.normalize();
+    const t=G.TAN[i].clone().addScaledVector(n,-G.TAN[i].dot(n)).normalize();
+    G.N[i].copy(n); G.TAN[i].copy(t); G.L[i].crossVectors(n,t).normalize(); }
 }
 function isRoad(T,name){ name=name||''; const r=T.road;
   if(r.exclude&&r.exclude.some(x=>name.includes(x)))return false;
   if(r.prefix)return r.prefix.some(p=>name.startsWith(p));
   if(r.contains)return r.contains.some(p=>name.includes(p));
   return false; }
+const tmpD=V();
 function nearestIndex(G,pos,guess,win){
   let best=-1,bd=1e18; const n=G.n;
   const lo=guess==null?0:guess-win, hi=guess==null?n-1:guess+win*2;
   for(let j=lo;j<=hi;j++){ let i=j; if(G.closed)i=((j%n)+n)%n; else if(j<0||j>=n)continue;
-    const p=G.P[i], dx=p.x-pos.x, dz=p.z-pos.z, dy=(p.y-pos.y)*2.5, d=dx*dx+dz*dz+dy*dy; if(d<bd){bd=d;best=i;} }
+    tmpD.subVectors(pos,G.P[i]); const h=tmpD.dot(G.N[i]), d=tmpD.lengthSq()+1.5*h*h; if(d<bd){bd=d;best=i;} }
   return best;
 }
-function lateral(G,i,pos){ const p=G.P[i],t=G.TAN[i]; const dx=pos.x-p.x,dz=pos.z-p.z; return dx*t.z-dz*t.x; } // + = left of center
+function lateral(G,i,pos){ return tmpD.subVectors(pos,G.P[i]).dot(G.L[i]); } // + = left of centre
 function idxDelta(G,a,b){ let d=b-a; if(G.closed){ if(d>G.n/2)d-=G.n; if(d<-G.n/2)d+=G.n; } return d; }
+// the point on the racing line next to pos (between point i and its nearer neighbour)
+function linePoint(G,i,pos,out){
+  const j=G.closed?(i+1)%G.n:Math.min(G.n-1,i+1), k=G.closed?(i-1+G.n)%G.n:Math.max(0,i-1);
+  const p=G.P[i], nb=G.P[j].distanceToSquared(pos)<G.P[k].distanceToSquared(pos)?G.P[j]:G.P[k];
+  const s=V().subVectors(nb,p), L2=s.lengthSq(), t=L2>0?clamp01(tmpD.subVectors(pos,p).dot(s)/L2):0;
+  return (out||V()).copy(p).addScaledVector(s,t);
+}
+// vector helpers for directions lying in the road plane
+function rotAbout(v,up,a){ const c=Math.cos(a), s=Math.sin(a), x=V().crossVectors(up,v); return v.multiplyScalar(c).addScaledVector(x,s); }
+function angleAbout(a,b,up){ return Math.atan2(V().crossVectors(a,b).dot(up),a.dot(b)); }
+function flatten(v,up){ v.addScaledVector(up,-v.dot(up)); const l=v.length(); if(l<1e-6)return v; return v.divideScalar(l); }
 
 function makeRacer(i,driverId,kartIdx,isPlayer,kartObj){
-  return {i,driverId,kartIdx,isPlayer,ko:kartObj,pos:V(),heading:0,speed:0,vy:0,steer:0,idx:0,prog:0,lap:0,finished:false,finishTime:0,
-    off:0,out:0,stuck:0,reverse:0,lane:0,kvx:0,kvz:0,yaw:0,travel:0,drifting:false,driftDir:0,driftT:0,boost:0,hull:hullOf(KARTS[kartIdx]),phase:Math.random()*6.28,up:V(0,1,0),air:0,grounded:true,wrong:0};
+  return {i,driverId,kartIdx,isPlayer,ko:kartObj,pos:V(),body:V(0,0,1),fwd:V(0,0,1),up:V(0,1,0),kv:V(),speed:0,vn:0,steer:0,idx:0,prog:0,lap:0,finished:false,finishTime:0,
+    off:0,out:0,stuck:0,reverse:0,lane:0,yaw:0,drifting:false,driftDir:0,driftT:0,boost:0,hull:hullOf(KARTS[kartIdx]),phase:Math.random()*6.28,air:0,grounded:true,wrong:0};
 }
+// stand a kart at line point i, offset sideways by w, facing along the road
+function standAt(r,i,w){ const G=race.G;
+  r.pos.copy(G.P[i]).addScaledVector(G.L[i],w).addScaledVector(G.N[i],0.3); r.up.copy(G.N[i]); r.fwd.copy(G.TAN[i]); r.body.copy(G.TAN[i]);
+  r.idx=i; r.grounded=false; r.air=0; r.speed=0; r.vn=0; r.kv.set(0,0,0); r.yaw=0; r.drifting=false; r.boost=0; r.launchV=0; r.groundPos=null; }
 function placeOnGrid(r,slot){
   const G=race.G, back=GRID.front+(slot>>1)*GRID.rowGap, side=slot%2?-1:1;
   let i0=race.startIdx; r.gridSlot=slot;
   const stepLen=G.P[1].distanceTo(G.P[0])||1; const k=Math.round(back/stepLen);
   let i=i0-k; if(G.closed)i=(i+G.n)%G.n; else i=Math.max(0,i);
-  const p=G.P[i], t=G.TAN[i]; const w=Math.min(G.WL[i],G.WR[i])*GRID.sideFrac*side;
-  r.pos.set(p.x+t.z*w,p.y+0.3,p.z-t.x*w); r.grounded=false; r.air=0; r.heading=Math.atan2(t.x,t.z); r.idx=i; r.prog=G.closed?-k:i; r.speed=0; r.vy=0; r.kvx=r.kvz=r.yaw=0; r.travel=r.heading; r.drifting=false; r.boost=0;
+  standAt(r,i,Math.min(G.WL[i],G.WR[i])*GRID.sideFrac*side); r.prog=G.closed?-k:i;
 }
 function resetRacer(r,why){
-  if(race.resets)race.resets.push({kart:r.i,idx:r.idx,why:why||'key',t:+race.time.toFixed(1)}); // for debugging
-  const G=race.G; let i=r.idx; if(race.gaps&&race.gaps.inGap[i]){ i=race.gaps.land[i]; r.idx=i; } // never back into a gap
-  const p=G.P[i],t=G.TAN[i];
-  r.pos.set(p.x,p.y+0.3,p.z); r.grounded=false; r.air=0; r.heading=Math.atan2(t.x,t.z); r.speed=0; r.vy=0; r.off=0; r.out=0; r.stuck=0; r.reverse=0; r.kvx=r.kvz=r.yaw=0; r.travel=r.heading; r.drifting=false; r.boost=0;
+  if(race.resets)race.resets.push({kart:r.i,idx:r.idx,why:why||'key',t:+race.time.toFixed(1),h:+tmpD.subVectors(r.pos,race.G.P[r.idx]).dot(race.G.N[r.idx]).toFixed(1),air:+r.air.toFixed(1)}); // for debugging
+  let i=r.idx; if(race.gaps&&race.gaps.inGap[i])i=race.gaps.land[i]; // never back into a gap
+  standAt(r,i,0); r.off=0; r.out=0; r.stuck=0; r.reverse=0;
   if(r.isPlayer)toast('Back on track',1.2);
 }
-const UP=V(0,1,0), rayFrom=V();
-// First surface under a point, starting stepUp above it (so a roof or tunnel ceiling overhead is never picked).
-// Only surfaces that belong to the track here count: road within roadBand of the racing line's height (bridges and
-// roads passing below stay separate), ground meshes only at or below the line (a hill or tunnel roof is not the road).
-function surfaceBelow(pos,far,lineY){
-  rayFrom.set(pos.x,pos.y+JUMP.stepUp,pos.z); ray.set(rayFrom,DOWN); ray.far=far+JUMP.stepUp;
-  for(const h of ray.intersectObjects(race.solid,false)){ const y=h.point.y;
-    if(h.object.userData.road? Math.abs(y-lineY)<JUMP.roadBand : y<lineY+JUMP.groundAbove) return h; }
+const UP=V(0,1,0), rayFrom=V(), rayDir=V();
+// The track around a kart: the nearest line point Q, the road normal there, and the landing point if a gap is ahead.
+function trackHere(r){ const G=race.G, i=r.idx, end=race.gaps.land[i];
+  return {Q:linePoint(G,i,r.pos), N:G.N[i], landP:end<0?null:G.P[end], landN:end<0?null:G.N[end]}; }
+// Gravity pulls straight down on gently sloped road, and toward the road where it banks steeply (Sky Plaza).
+function gravityUp(N){ return N.y>JUMP.flatY?UP:N; }
+// First surface along -dir from a point stepUp above pos (so a roof or tunnel ceiling overhead is never picked).
+// Only surfaces that belong to the track here count: road within roadBand of the racing line's surface (or of the
+// landing point's, near a gap), ground meshes only at or below it (a hill or tunnel roof is not the road).
+function surfaceAlong(pos,dir,far,tr){
+  rayFrom.copy(pos).addScaledVector(dir,JUMP.stepUp); rayDir.copy(dir).negate(); ray.set(rayFrom,rayDir); ray.far=far+JUMP.stepUp;
+  for(const h of ray.intersectObjects(race.solid,false)){ const a=tmpD.subVectors(h.point,tr.Q).dot(tr.N);
+    if(h.face&&Math.abs(h.face.normal.clone().transformDirection(h.object.matrixWorld).dot(tr.N))<JUMP.maxSurfaceTilt) continue; // a curb side or wall face is not ground
+    if(h.object.userData.road){ if(Math.abs(a)<JUMP.roadBand||(tr.landP&&Math.abs(tmpD.subVectors(h.point,tr.landP).dot(tr.landN))<JUMP.roadBand))return h; }
+    else if(a<JUMP.groundAbove) return h; }
   return null;
 }
+// the surface's normal, but only if it is close to the road's own normal there: the side of a curb or a wall is not
+// something to drive up (it would tip the kart over)
+function faceNormal(h,ref,roadN){ if(!h.face)return null; const n=h.face.normal.clone().transformDirection(h.object.matrixWorld); if(n.dot(ref)<0)n.negate();
+  return n.dot(roadN)>JUMP.maxSurfaceTilt?n:roadN; }
 // Gaps in the road along the racing line: runs of points with no road mesh under them. Each point in a gap (and the
 // three points before it, where karts take off) maps to the point where the road resumes.
 function findGaps(G,road){
   const land=new Array(G.n).fill(-1), list=[]; let i=0;
-  const hasRoad=k=>{ const p=G.P[k]; rayFrom.set(p.x,p.y+1.2,p.z); ray.set(rayFrom,DOWN); ray.far=2.4; return ray.intersectObjects(road,false).length>0; };
+  const hasRoad=k=>{ rayFrom.copy(G.P[k]).addScaledVector(G.N[k],1.2); ray.set(rayFrom,G.N[k].clone().negate()); ray.far=2.4; return ray.intersectObjects(road,false).length>0; };
   const ok=G.P.map((_,k)=>hasRoad(k));
   while(i<G.n){ if(ok[i]){i++;continue;} let j=i; while(j<G.n&&!ok[j])j++;
     const end=Math.min(G.n-1,j); for(let k=Math.max(0,i-3);k<j;k++)land[k]=end; list.push([i,j-1]); i=j; }
@@ -446,23 +501,18 @@ function findGaps(G,road){
 // Over a gap there is no mesh to measure, so the recorded width is kept.
 function measureWidths(G,road,inGap){
   const WL=[],WR=[];
-  const hit=(i,off)=>{ const p=G.P[i],t=G.TAN[i]; rayFrom.set(p.x+t.z*off,p.y+1.2,p.z-t.x*off); ray.set(rayFrom,DOWN); ray.far=2.4; return ray.intersectObjects(road,false).length>0; };
+  const hit=(i,off)=>{ rayFrom.copy(G.P[i]).addScaledVector(G.L[i],off).addScaledVector(G.N[i],1.2); ray.set(rayFrom,G.N[i].clone().negate()); ray.far=2.4; return ray.intersectObjects(road,false).length>0; };
   const side=(i,sgn)=>{ const hw=G.HW[i]; if(inGap[i]||hit(i,sgn*hw))return hw;
-    let lo=0,hi=hw; for(let k=0;k<5;k++){ const m=(lo+hi)/2; if(hit(i,sgn*m))lo=m; else hi=m; } return Math.max(WALL_MIN,lo); };
+    let lo=0,hi=hw; for(let k=0;k<5;k++){ const m=(lo+hi)/2; if(hit(i,sgn*m))lo=m; else hi=m; } return Math.max(WALL_MIN,lo-WALL_INSET); };
   for(let i=0;i<G.n;i++){ WL.push(side(i,1)); WR.push(side(i,-1)); }
   return {WL,WR};
 }
-const WALL_MIN=1.2; // narrowest a wall may close in (m from the racing line)
-function lineHeight(G,i,pos){
-  const j=G.closed?(i+1)%G.n:Math.min(G.n-1,i+1), k=G.closed?(i-1+G.n)%G.n:Math.max(0,i-1);
-  const p=G.P[i]; const nb=(Math.hypot(G.P[j].x-pos.x,G.P[j].z-pos.z)<Math.hypot(G.P[k].x-pos.x,G.P[k].z-pos.z))?G.P[j]:G.P[k];
-  const sx=nb.x-p.x, sz=nb.z-p.z, L=sx*sx+sz*sz; const t=L>0?Math.max(0,Math.min(1,((pos.x-p.x)*sx+(pos.z-p.z)*sz)/L)):0;
-  return p.y+(nb.y-p.y)*t;
-}
+const WALL_MIN=1.2, WALL_INSET=0.15; // narrowest a wall may close in (m from the racing line); margin inside the mesh edge
 function stepRacer(r,dt,input,t){
   const G=race.G, k=KARTS[r.kartIdx].stats;
   const boost=r.boost>0?1+DRIFT.boostPower:1;
-  const top=(18+k.speed*2.6)*(r.isPlayer?SPEED.player:DIFF[state.diff].top*r.band*SPEED.ai)*boost, acc=(9+k.accel*2.4)*boost;
+  const mul=r.isPlayer?SPEED.player:SPEED.ai;
+  const top=(18+k.speed*2.6)*(r.isPlayer?1:DIFF[state.diff].top*r.band)*mul*boost, acc=(9+k.accel*2.4)*mul*boost;
   r.idx=nearestIndex(G,r.pos,r.idx,14);
   const lat=lateral(G,r.idx,r.pos), hw=G.HW[r.idx];
   const offroad=Math.abs(lat)>hw*1.05; const way=Math.abs(lat)>hw*2.2;
@@ -470,63 +520,89 @@ function stepRacer(r,dt,input,t){
   let throttle=input.throttle, steer=input.steer;
   if(!race.go){throttle=0;}
   if(throttle>0) r.speed+=acc*throttle*dt*(1-Math.max(0,r.speed)/maxS*0.85);
-  else if(throttle<0) r.speed+=(r.speed>0? -26 : -8)*(-throttle)*dt;
-  else r.speed-=Math.sign(r.speed)*Math.min(Math.abs(r.speed),5*dt);
-  if(r.speed>maxS) r.speed=Math.max(maxS,r.speed-20*dt);
-  r.speed=Math.max(-6,Math.min(r.speed,top*1.05));
+  else if(throttle<0) r.speed+=(r.speed>0? -26 : -8)*mul*(-throttle)*dt;
+  else r.speed-=Math.sign(r.speed)*Math.min(Math.abs(r.speed),5*mul*dt);
+  if(r.speed>maxS) r.speed=Math.max(maxS,r.speed-20*mul*dt);
+  r.speed=Math.max(-6*mul,Math.min(r.speed,top*1.05));
   r.steer+= (steer-r.steer)*Math.min(1,dt*10);
   updateDrift(r,input,dt);
-  if(r.drifting){ const d=r.driftDir;
-    r.heading+=(DRIFT.bias+r.steer*d*DRIFT.steer)*d*Math.min(1,r.speed/10)*dt; r.driftT+=dt; r.speed-=DRIFT.drag*dt; }
+  const up=r.up;
+  if(r.drifting){ const d=r.driftDir, into=r.steer*d; // into > 0: steering into the corner
+    rotAbout(r.fwd,up,d*(DRIFT.turn+into*DRIFT.steer)*Math.min(1,Math.max(0,r.speed))*dt);
+    const target=rotAbout(r.fwd.clone(),up,d*(DRIFT.angle+into*DRIFT.angleSteer));
+    rotAbout(r.body,up,angleAbout(r.body,target,up)*Math.min(1,DRIFT.swing*dt)); r.driftT+=dt; r.speed=Math.max(0,r.speed-DRIFT.drag*dt); }
   else { const turnRate=(1.9+k.grip*0.12)*(1-0.35*Math.min(1,Math.abs(r.speed)/top));
-    r.heading+=r.steer*turnRate*Math.max(-1,Math.min(1,r.speed/6))*dt; }
-  // the direction of travel follows the body: slowly while drifting (the slide), almost at once otherwise
-  const slip=wrapAngle(r.heading-r.travel);
-  r.travel+=slip*Math.min(1,(r.drifting?DRIFT.grip:DRIFT.normalGrip)*dt);
-  if(Math.abs(wrapAngle(r.heading-r.travel))>DRIFT.maxAngle) r.travel=r.heading-Math.sign(slip)*DRIFT.maxAngle;
+    rotAbout(r.body,up,r.steer*turnRate*Math.max(-1,Math.min(1,r.speed/6))*dt);
+    // out of a drift the path follows the body almost at once
+    const slip=angleAbout(r.fwd,r.body,up); rotAbout(r.fwd,up,slip*Math.min(1,DRIFT.normalGrip*dt));
+    const left=angleAbout(r.fwd,r.body,up); if(Math.abs(left)>DRIFT.maxAngle) r.fwd.copy(rotAbout(r.body.clone(),up,-Math.sign(left)*DRIFT.maxAngle)); }
   if(r.boost>0) r.boost-=dt;
-  r.pos.x+=Math.sin(r.travel)*r.speed*dt; r.pos.z+=Math.cos(r.travel)*r.speed*dt;
+  r.pos.addScaledVector(r.fwd,r.speed*dt);
   // sideways knock and spin from collisions, bled off by tire grip
-  r.pos.x+=r.kvx*dt; r.pos.z+=r.kvz*dt; r.heading+=r.yaw*dt;
-  const kd=Math.exp(-PHYS.knockGrip*dt); r.kvx*=kd; r.kvz*=kd; r.yaw*=Math.exp(-PHYS.yawDamp*dt);
+  r.pos.addScaledVector(r.kv,dt); rotAbout(r.body,up,r.yaw*dt);
+  r.kv.multiplyScalar(Math.exp(-PHYS.knockGrip*dt)); r.yaw*=Math.exp(-PHYS.yawDamp*dt);
   updateVertical(r,dt);
   // progress
   const prev=r.lastIdx==null?r.idx:r.lastIdx; const d=idxDelta(G,prev,r.idx); r.prog+=d; r.lastIdx=r.idx;
-  r.wrong = (Math.cos(r.heading)*G.TAN[r.idx].z+Math.sin(r.heading)*G.TAN[r.idx].x) < -0.3 && r.speed>3 ? r.wrong+dt : 0;
+  r.wrong = r.body.dot(G.TAN[r.idx]) < -0.3 && r.speed>3 ? r.wrong+dt : 0;
   // falling / off track resets
   if(way) r.out+=dt; else r.out=0;
-  if(r.out>1.6) resetRacer(r,'off track'); else if(r.air>JUMP.airReset) resetRacer(r,'airborne'); else if(r.pos.y<lineHeight(G,r.idx,r.pos)-JUMP.fallReset) resetRacer(r,'fell');
+  if(r.out>1.6) resetRacer(r,'off track'); else if(r.air>JUMP.airReset) resetRacer(r,'airborne'); else if(hasFallen(r)) resetRacer(r,'fell');
   if(race.go&&!r.finished&&!r.isPlayer){ if(Math.abs(r.speed)<1.2){r.stuck+=dt; if(r.stuck>1.5&&r.reverse<=0)r.reverse=0.9; if(r.stuck>4)resetRacer(r,'stuck');} else r.stuck=0; }
 }
+// Driving on a road is never a fall, nor is a jump from a ramp below the line: a kart has fallen only when it is far
+// below the racing line, below the landing point (near a gap) and below where it last stood.
+function hasFallen(r){
+  if(r.grounded&&r.onRoad)return false; const tr=trackHere(r), F=-JUMP.fallReset;
+  if(tmpD.subVectors(r.pos,tr.Q).dot(tr.N)>=F)return false;
+  if(tr.landP&&tmpD.subVectors(r.pos,tr.landP).dot(tr.landN)>=F)return false;
+  if(r.groundPos&&tmpD.subVectors(r.pos,r.groundPos).dot(tr.N)>=F)return false;
+  return true;
+}
+// keep the kart's directions and knock in its road plane after its up direction changed
+function settle(r){ flatten(r.fwd,r.up); flatten(r.body,r.up); r.kv.addScaledVector(r.up,-r.kv.dot(r.up)); }
 function updateVertical(r,dt){
-  const lineY=lineHeight(race.G,r.idx,r.pos);
+  const tr=trackHere(r), hLine=tmpD.subVectors(r.pos,tr.Q).dot(tr.N);
   if(r.grounded){
-    const h=surfaceBelow(r.pos,JUMP.snap,lineY);
-    if(!h&&r.pos.y-lineY<JUMP.snap&&r.pos.y-lineY>-JUMP.stepUp&&holdsAtLine(r,lineY)){ r.vy=0; r.pos.y=lineY; r.air=0; return; }
-    if(h){ const y=h.point.y; r.vy=Math.max(-JUMP.maxVy,Math.min(JUMP.maxVy,(y-r.pos.y)/dt)); r.pos.y=y; r.air=0;
-      const n=h.face?h.face.normal.clone().transformDirection(h.object.matrixWorld):null; if(n){ if(n.y<0)n.negate(); r.up.lerp(n,Math.min(1,dt*8)).normalize(); }
-      return; }
-    r.grounded=false; takeOff(r);
+    const h=surfaceAlong(r.pos,r.up,JUMP.snap,tr);
+    if(!h&&hLine<JUMP.snap&&hLine>-JUMP.stepUp&&holdsAtLine(r,tr)){ r.pos.addScaledVector(tr.N,-hLine); r.vn=0; r.air=0; r.onRoad=true; r.groundPos=r.pos.clone(); r.up.lerp(tr.N,Math.min(1,dt*8)).normalize(); settle(r); return; }
+    if(h){ r.onRoad=h.object.userData.road; r.vn=Math.max(-JUMP.maxVy,Math.min(JUMP.maxVy,tmpD.subVectors(h.point,r.pos).dot(r.up)/dt));
+      r.pos.copy(h.point); r.groundPos=r.pos.clone(); r.air=0;
+      const n=faceNormal(h,r.up,tr.N); if(n) r.up.lerp(n,Math.min(1,dt*12)).normalize(); settle(r); return; }
+    r.grounded=false; takeOff(r,tr);
   }
-  r.air+=dt; r.vy-=JUMP.gravity*dt; r.pos.y+=r.vy*dt;
-  r.up.lerp(UP,Math.min(1,dt*2)).normalize();
+  const gUp=gravityUp(tr.N);
+  r.air+=dt; r.vn-=JUMP.gravity*dt; r.pos.addScaledVector(gUp,r.vn*dt);
+  if(r.launchV){ // in a jump: keep the take-off speed (a wall scrape would leave it short) and steer to the line ahead,
+    // so a kart lands in the middle of the narrow ramps between Mountain Run's jumps even where the line bends
+    const G=race.G, end=race.gaps.land[r.idx], ahead=end>=0?end:(G.closed?(r.idx+4)%G.n:Math.min(G.n-1,r.idx+4));
+    r.speed=Math.max(r.speed,r.launchV);
+    const dir=flatten(V().subVectors(G.P[ahead],r.pos),r.up), a=angleAbout(r.fwd,dir,r.up)*Math.min(1,JUMP.airSteer*dt);
+    rotAbout(r.fwd,r.up,a); rotAbout(r.body,r.up,a); }
+  r.up.lerp(gUp,Math.min(1,dt*2)).normalize(); settle(r);
   // land when at or below a surface, also while still rising (a steep ramp can climb faster than the jump)
-  const h=surfaceBelow(r.pos,Math.max(0.05,-r.vy*dt),lineY);
-  const floor=h?h.point.y:(holdsAtLine(r,lineY)?lineY:null);
-  if(floor!=null&&r.pos.y<=floor+0.02){ r.pos.y=floor; r.vy=0; r.grounded=true; r.air=0; }
+  const h=surfaceAlong(r.pos,gUp,Math.max(0.05,-r.vn*dt),tr);
+  let floor=null; if(h) floor=h.point; else if(holdsAtLine(r,tr)) floor=r.pos.clone().addScaledVector(tr.N,-hLine);
+  const below=floor?tmpD.subVectors(floor,r.pos).dot(gUp):0;
+  if(floor&&below>JUMP.popUp&&r.vn<=0){ r.vn=Math.sqrt(2*JUMP.gravity*below)+0.5; return; } // came in under the road's edge: hop up onto it
+  if(floor&&below>=-0.02){ r.pos.copy(floor); r.vn=0; r.grounded=true; r.air=0; r.launchV=0; r.onRoad=h?h.object.userData.road:true; r.groundPos=r.pos.clone();
+    const n=h?faceNormal(h,gUp,tr.N):tr.N; if(n)r.up.copy(n); settle(r); }
 }
 // Off the edge of a road mesh but not over a real gap: curbs, barriers and shoulders are separate meshes, so the road's
 // height holds there, unless real ground is visible more than holdDepth below (then the kart would look like it floats).
-function holdsAtLine(r,lineY){
+function holdsAtLine(r,tr){
   if(race.gaps.inGap[r.idx])return false;
-  const deep=surfaceBelow(r.pos,60,lineY); return !deep||lineY-deep.point.y<JUMP.holdDepth;
+  const deep=surfaceAlong(r.pos,tr.N,60,{Q:tr.Q,N:tr.N}); return !deep||tmpD.subVectors(tr.Q,deep.point).dot(tr.N)<JUMP.holdDepth;
 }
 // leaving the surface over a gap in the road: aim the jump at the point where the road resumes
-function takeOff(r){
+function takeOff(r,tr){
   const G=race.G, end=race.gaps.land[r.idx]; if(end<0)return;
-  const L=G.P[end], d=Math.hypot(L.x-r.pos.x,L.z-r.pos.z)+1, v=Math.max(4,r.speed), t=d/v;
-  const need=(L.y+JUMP.clear-r.pos.y+0.5*JUMP.gravity*t*t)/t;
-  r.vy=Math.max(r.vy,Math.min(JUMP.launchMax,need));
+  r.speed=Math.max(r.speed,JUMP.launchSpeed); r.launchV=r.speed;
+  const gUp=gravityUp(tr.N), to=V().subVectors(G.P[end],r.pos), dh=to.dot(gUp), d=to.addScaledVector(gUp,-dh).length()+1, t=d/r.speed;
+  // point the jump at the landing point (short gaps are over too fast for steering in the air to line it up)
+  const dir=flatten(V().subVectors(G.P[end],r.pos),r.up), a=angleAbout(r.fwd,dir,r.up); if(Math.abs(a)<1){ rotAbout(r.fwd,r.up,a); rotAbout(r.body,r.up,a); }
+  const need=(dh+JUMP.clear+0.5*JUMP.gravity*t*t)/t;
+  r.vn=Math.max(r.vn,Math.min(JUMP.launchMax,need));
 }
 const wrapAngle=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
 function updateDrift(r,input,dt){
@@ -546,28 +622,28 @@ function aiInput(r,dt,t){
   if(r.reverse>0){r.reverse-=dt; return {throttle:-1,steer:-Math.sign(lateral(G,r.idx,r.pos))};}
   const look=5+Math.floor(Math.max(0,r.speed)*0.28);
   let ti=r.idx+look; ti=G.closed?ti%n:Math.min(n-1,ti);
-  const p=G.P[ti], tt=G.TAN[ti], lane=(r.lane+0.18*Math.sin(t*0.4+r.phase))*Math.min(G.WL[ti],G.WR[ti]);
-  const tx=p.x+tt.z*lane, tz=p.z-tt.x*lane;
-  const want=Math.atan2(tx-r.pos.x,tz-r.pos.z), da=wrapAngle(want-r.travel);
+  const lane=(race.gaps.land[ti]>=0?0:r.lane+0.18*Math.sin(t*0.4+r.phase))*Math.min(G.WL[ti],G.WR[ti]); // keep to the middle for a jump
+  const target=G.P[ti].clone().addScaledVector(G.L[ti],lane);
+  const da=angleAbout(r.fwd,flatten(target.sub(r.pos),r.up),r.up);
   const steer=Math.max(-1,Math.min(1,da*2.4));
   let ci=r.idx+9; ci=G.closed?ci%n:Math.min(n-1,ci);
-  const t0=G.TAN[r.idx], t1=G.TAN[ci]; const curv=Math.acos(Math.max(-1,Math.min(1,t0.x*t1.x+t0.z*t1.z)));
+  const t0=G.TAN[r.idx], t1=G.TAN[ci]; const curv=Math.acos(Math.max(-1,Math.min(1,t0.dot(t1))));
   const k=KARTS[r.kartIdx].stats, top=(18+k.speed*2.6)*DIFF[state.diff].top*SPEED.ai;
   // drift through sharp corners, only in the direction the corner turns, and let go once overshooting (counter-steer)
-  const bend=Math.sign(wrapAngle(Math.atan2(t1.x,t1.z)-Math.atan2(t0.x,t0.z)));
+  const bend=Math.sign(V().crossVectors(t0,t1).dot(G.N[r.idx]));
   const drift=r.drifting? (curv>DRIFT.aiCurve*0.5&&steer*r.driftDir>-0.3)
     : (curv>DRIFT.aiCurve&&Math.sign(steer)===bend&&Math.abs(da)<0.6);
   // gentle rubber band toward the player
   const pl=race.racers[0]; const gap=r.prog-pl.prog; const band=DIFF[state.diff].band;
   r.band=1+(gap>20?-band:(gap<-20?band:0));
-  const target=top*r.band*(1-Math.min(drift?0.3:0.45,curv*0.9));
-  const throttle=r.speed<target?1:(r.speed>target+2?-0.6:0);
+  const tgt=top*r.band*(1-Math.min(drift?0.3:0.45,curv*0.9));
+  const throttle=r.speed<tgt?1:(r.speed>tgt+2?-0.6:0);
   return {throttle,steer,drift};
 }
 const keys={};
 addEventListener('keydown',e=>{ if(e.target.closest&&e.target.closest('#tuner'))return; keys[e.code]=true;
   if(race&&race.running&&(e.code==='Escape'||e.code==='KeyP')){togglePause();}
-  if(e.code==='KeyM'){state.sound=!state.sound; if(audio.g)audio.g.gain.value=state.sound?0.06:0;}
+  if(e.code==='KeyM'){state.sound=!state.sound; GPAudio.setMuted(!state.sound);}
   if(race&&race.running&&!race.paused&&e.code==='KeyR'&&race.go){resetRacer(race.racers[0]);}
   if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code))e.preventDefault(); });
 addEventListener('keyup',e=>{keys[e.code]=false;});
@@ -575,10 +651,11 @@ addEventListener('blur',()=>{for(const k in keys)keys[k]=false;});
 function playerInput(){ const up=keys.KeyW||keys.ArrowUp, dn=keys.KeyS||keys.ArrowDown, l=keys.KeyA||keys.ArrowLeft, r=keys.KeyD||keys.ArrowRight;
   return {throttle:(up?1:0)-(dn?1:0), steer:(l?1:0)-(r?1:0), drift:!!(keys.ShiftLeft||keys.ShiftRight||keys.Space)}; }
 // ---------- kart collisions ----------
-// Each kart is a capsule in the ground plane: a segment along its heading plus a radius, sized from the wheel hubs
+// Each kart is a capsule lying in its road plane: a segment along its body plus a radius, sized from the wheel hubs
 // (the Tripo bounding boxes are wrong). Overlaps are pushed apart by inverse mass, then an impulse along the contact
 // normal n is applied: j = -(1+e)(v_rel·n) / (1/mA + 1/mB + (rA×n)²/IA + (rB×n)²/IB). That conserves momentum, sends the
-// lighter kart further, and spins a kart that is hit off its center. A capped friction impulse slows side-swipes.
+// lighter kart further, and spins a kart that is hit off its centre. A capped friction impulse slows side-swipes.
+// All vectors are 3D so this works the same on Sky Plaza's banked road; spin is about each kart's up direction.
 function hullOf(k){
   let hw=0,front=-1e9,rear=1e9;
   for(const key in k.hubs){ const h=k.hubs[key], r=k.radius[key]; hw=Math.max(hw,Math.abs(h[0])+r*0.6); front=Math.max(front,h[2]+r); rear=Math.min(rear,h[2]-r); }
@@ -586,70 +663,67 @@ function hullOf(k){
   return {rad,half:Math.max(0,len/2-rad),cz:(front+rear)/2*s,mass:k.mass,inertia:PHYS.spinInertia*k.mass*(len*len+4*rad*rad)/12};
 }
 const clamp01=x=>Math.max(0,Math.min(1,x));
-function capsule(r){ const fx=Math.sin(r.heading), fz=Math.cos(r.heading), h=r.hull, cx=r.pos.x+fx*h.cz, cz=r.pos.z+fz*h.cz;
-  return [cx-fx*h.half,cz-fz*h.half,cx+fx*h.half,cz+fz*h.half]; }
-function segClosest(ax,az,bx,bz,cx,cz,dx,dz){ // closest points between segments AB and CD (x/z plane)
-  const ux=bx-ax,uz=bz-az,vx=dx-cx,vz=dz-cz,wx=ax-cx,wz=az-cz, a=ux*ux+uz*uz, e=vx*vx+vz*vz, f=vx*wx+vz*wz, EPS=1e-9;
+function capsule(r){ const h=r.hull, c=r.pos.clone().addScaledVector(r.body,h.cz); return [c.clone().addScaledVector(r.body,-h.half),c.addScaledVector(r.body,h.half)]; }
+function segClosest(A,B,C,D){ // closest points between segments AB and CD
+  const u=V().subVectors(B,A), v=V().subVectors(D,C), w=V().subVectors(A,C), a=u.dot(u), e=v.dot(v), f=v.dot(w), EPS=1e-9;
   let s=0,t=0;
   if(a<=EPS&&e>EPS) t=clamp01(f/e);
-  else if(a>EPS){ const c=ux*wx+uz*wz;
+  else if(a>EPS){ const c=u.dot(w);
     if(e<=EPS) s=clamp01(-c/a);
-    else { const b=ux*vx+uz*vz, den=a*e-b*b; s=den>EPS?clamp01((b*f-c*e)/den):0; t=(b*s+f)/e;
+    else { const b=u.dot(v), den=a*e-b*b; s=den>EPS?clamp01((b*f-c*e)/den):0; t=(b*s+f)/e;
       if(t<0){t=0;s=clamp01(-c/a);} else if(t>1){t=1;s=clamp01((b-c)/a);} } }
-  return [ax+ux*s,az+uz*s,cx+vx*t,cz+vz*t];
+  return [A.clone().addScaledVector(u,s),C.clone().addScaledVector(v,t)];
 }
-function velAt(r,rx,rz){ // planar velocity of a point offset (rx,rz) from the kart center, yaw about +y
-  return [Math.sin(r.travel)*r.speed+r.kvx+r.yaw*rz, Math.cos(r.travel)*r.speed+r.kvz-r.yaw*rx]; }
-function setVel(r,vx,vz){ // split back into forward speed (engine axis) and sideways knock
-  const fx=Math.sin(r.travel), fz=Math.cos(r.travel); r.speed=vx*fx+vz*fz; r.kvx=vx-fx*r.speed; r.kvz=vz-fz*r.speed; }
+function velAt(r,rv){ return r.fwd.clone().multiplyScalar(r.speed).add(r.kv).addScaledVector(V().crossVectors(r.up,rv),r.yaw); }
+function setVel(r,v){ v.addScaledVector(r.up,-v.dot(r.up)); r.speed=v.dot(r.fwd); r.kv.copy(v).addScaledVector(r.fwd,-r.speed); }
+function spin(r,rv,J){ return V().crossVectors(rv,J).dot(r.up)/r.hull.inertia; }
 function collidePair(A,B){
-  if(Math.abs(B.pos.y-A.pos.y)>PHYS.contactDy) return 0;
-  const [px,pz,qx,qz]=segClosest(...capsule(A),...capsule(B));
-  let nx=qx-px, nz=qz-pz; const d=Math.hypot(nx,nz), minD=A.hull.rad+B.hull.rad;
+  if(Math.abs(tmpD.subVectors(B.pos,A.pos).dot(A.up))>PHYS.contactDy) return 0;
+  if(A.launchV||B.launchV) return 0; // no bumping during a jump: being knocked off a launch pad is not fun
+  const [p,q]=segClosest(...capsule(A),...capsule(B));
+  const n=V().subVectors(q,p); n.addScaledVector(A.up,-n.dot(A.up)); const d=n.length(), minD=A.hull.rad+B.hull.rad;
   if(d>=minD) return 0;
-  if(d>1e-6){nx/=d;nz/=d;} else {nx=Math.cos(A.heading);nz=-Math.sin(A.heading);}
+  if(d>1e-6) n.divideScalar(d); else n.crossVectors(A.up,A.body).normalize();
   const iA=1/A.hull.mass, iB=1/B.hull.mass, pen=minD-d;
-  A.pos.x-=nx*pen*iA/(iA+iB); A.pos.z-=nz*pen*iA/(iA+iB); B.pos.x+=nx*pen*iB/(iA+iB); B.pos.z+=nz*pen*iB/(iA+iB);
-  const cpx=(px+nx*A.hull.rad+qx-nx*B.hull.rad)/2, cpz=(pz+nz*A.hull.rad+qz-nz*B.hull.rad)/2;
-  const rAx=cpx-A.pos.x, rAz=cpz-A.pos.z, rBx=cpx-B.pos.x, rBz=cpz-B.pos.z;
-  const [aX,aZ]=velAt(A,rAx,rAz), [bX,bZ]=velAt(B,rBx,rBz), relX=bX-aX, relZ=bZ-aZ, vn=relX*nx+relZ*nz;
+  A.pos.addScaledVector(n,-pen*iA/(iA+iB)); B.pos.addScaledVector(n,pen*iB/(iA+iB));
+  const cp=p.clone().addScaledVector(n,A.hull.rad).add(q.clone().addScaledVector(n,-B.hull.rad)).multiplyScalar(0.5);
+  const rA=V().subVectors(cp,A.pos), rB=V().subVectors(cp,B.pos), rel=velAt(B,rB).sub(velAt(A,rA)), vn=rel.dot(n);
   if(vn>=0) return 0; // already separating
-  const rnA=rAz*nx-rAx*nz, rnB=rBz*nx-rBx*nz;
+  const rnA=V().crossVectors(rA,n).dot(A.up), rnB=V().crossVectors(rB,n).dot(B.up);
   const j=-(1+PHYS.restitution)*vn/(iA+iB+rnA*rnA/A.hull.inertia+rnB*rnB/B.hull.inertia);
-  const tx=-nz, tz=nx, vt=relX*tx+relZ*tz, jt=Math.max(-PHYS.friction*j,Math.min(PHYS.friction*j,-vt/(iA+iB)));
-  const Jx=nx*j+tx*jt, Jz=nz*j+tz*jt;
-  const [vAx,vAz]=velAt(A,0,0), [vBx,vBz]=velAt(B,0,0);
-  setVel(A,vAx-Jx*iA,vAz-Jz*iA); setVel(B,vBx+Jx*iB,vBz+Jz*iB);
-  A.yaw=capYaw(A.yaw-(rAz*Jx-rAx*Jz)/A.hull.inertia); B.yaw=capYaw(B.yaw+(rBz*Jx-rBx*Jz)/B.hull.inertia);
+  const tg=V().crossVectors(A.up,n), vt=rel.dot(tg), jt=Math.max(-PHYS.friction*j,Math.min(PHYS.friction*j,-vt/(iA+iB)));
+  const J=n.clone().multiplyScalar(j).addScaledVector(tg,jt);
+  setVel(A,velAt(A,V()).addScaledVector(J,-iA)); setVel(B,velAt(B,V()).addScaledVector(J,iB));
+  A.yaw=capYaw(A.yaw-spin(A,rA,J)); B.yaw=capYaw(B.yaw+spin(B,rB,J));
   return j;
 }
 const capYaw=w=>Math.max(-PHYS.maxYaw,Math.min(PHYS.maxYaw,w));
 // Track-edge walls: an infinitely heavy line on each side of the racing line, at the local road half-width (averaged
-// with its neighbours so the wall does not step). The capsule end furthest out is pushed back inside, then the same
-// impulse as kart-vs-kart with the wall's 1/m = 0: j = (1+e)(v·n) / (1/m + (r×n)²/I), plus capped scrape friction.
-// A kart that hits nose-first is turned away from the wall; a glancing hit just scrapes along it.
+// with its neighbours so the wall does not step), measured across the road (L), so it banks with Sky Plaza's road.
+// The capsule end furthest out is pushed back inside, then the same impulse as kart-vs-kart with the wall's 1/m = 0:
+// j = (1+e)(v·n) / (1/m + (r×n)²/I), plus capped scrape friction. A kart that hits nose-first is turned away from the
+// wall; a glancing hit just scrapes along it.
 function collideWall(r,dt){
   const G=race.G, i=r.idx, n=G.n, K=k=>G.closed?(k+n)%n:Math.max(0,Math.min(n-1,k));
-  const avg=A=>(A[K(i-1)]+A[K(i)]+A[K(i+1)])/3*PHYS.wallAt, wallL=avg(G.WL), wallR=avg(G.WR), t=G.TAN[i], h=r.hull, c=capsule(r);
-  let pen=0, ex=0, ez=0, side=1;
-  for(const [x,z] of [[c[0],c[1]],[c[2],c[3]]]){ const lat=lateral(G,i,{x,z}), d=Math.abs(lat)+h.rad-(lat>0?wallL:wallR);
-    if(d>pen){pen=d;ex=x;ez=z;side=lat<0?-1:1;} }
+  const avg=A=>(A[K(i-1)]+A[K(i)]+A[K(i+1)])/3*PHYS.wallAt, wallL=avg(G.WL), wallR=avg(G.WR), h=r.hull;
+  let pen=0, e=null, side=1;
+  for(const c of capsule(r)){ const lat=lateral(G,i,c), d=Math.abs(lat)+h.rad-(lat>0?wallL:wallR);
+    if(d>pen){pen=d;e=c;side=lat<0?-1:1;} }
   if(pen<=0) return 0;
-  const nx=t.z*side, nz=-t.x*side; // outward, toward the wall
-  const rx=ex+nx*h.rad-r.pos.x, rz=ez+nz*h.rad-r.pos.z;
-  r.pos.x-=nx*pen; r.pos.z-=nz*pen;
+  const nrm=flatten(G.L[i].clone().multiplyScalar(side),r.up); // outward, toward the wall
+  const rv=e.clone().addScaledVector(nrm,h.rad).sub(r.pos);
+  r.pos.addScaledVector(nrm,-Math.min(pen,PHYS.wallPushMax)); // where walls close in after a gap, slide back in instead of jumping
   // swing the nose parallel to the wall, toward the race direction when it is pointing straight in
-  const fx=Math.sin(r.heading), fz=Math.cos(r.heading);
-  if(fx*nx+fz*nz>0){ const along=fx*t.x+fz*t.z, sgn=Math.abs(along)<0.2?1:Math.sign(along);
-    let da=Math.atan2(t.x*sgn,t.z*sgn)-r.heading; while(da>Math.PI)da-=2*Math.PI; while(da<-Math.PI)da+=2*Math.PI;
-    const a=Math.min(1,PHYS.wallAlign*dt); r.heading+=da*a; r.travel+=wrapAngle(r.heading-r.travel)*a; }
-  const [px,pz]=velAt(r,rx,rz), vn=px*nx+pz*nz;
+  if(r.body.dot(nrm)>0){ const T=G.TAN[i], along=r.body.dot(T), sgn=Math.abs(along)<0.2?1:Math.sign(along);
+    const a=Math.min(1,PHYS.wallAlign*dt), da=angleAbout(r.body,flatten(T.clone().multiplyScalar(sgn),r.up),r.up);
+    rotAbout(r.body,r.up,da*a); rotAbout(r.fwd,r.up,angleAbout(r.fwd,r.body,r.up)*a); }
+  const v=velAt(r,rv), vn=v.dot(nrm);
   if(vn<=0) return 0; // already moving away from the wall
-  const iM=1/h.mass, rn=rz*nx-rx*nz, j=(1+PHYS.wallRestitution)*vn/(iM+rn*rn/h.inertia);
-  const tx=-nz, tz=nx, vt=px*tx+pz*tz, jt=Math.max(-PHYS.wallFriction*j,Math.min(PHYS.wallFriction*j,-vt/iM));
-  const Jx=-nx*j+tx*jt, Jz=-nz*j+tz*jt;
-  const [vx,vz]=velAt(r,0,0); setVel(r,vx+Jx*iM,vz+Jz*iM);
-  r.yaw=capYaw(r.yaw+(rz*Jx-rx*Jz)/h.inertia);
+  const iM=1/h.mass, rn=V().crossVectors(rv,nrm).dot(r.up), j=(1+PHYS.wallRestitution)*vn/(iM+rn*rn/h.inertia);
+  const tg=V().crossVectors(r.up,nrm), vt=v.dot(tg), jt=Math.max(-PHYS.wallFriction*j,Math.min(PHYS.wallFriction*j,-vt/iM));
+  const J=nrm.clone().multiplyScalar(-j).addScaledVector(tg,jt);
+  setVel(r,velAt(r,V()).addScaledVector(J,iM));
+  r.yaw=capYaw(r.yaw+spin(r,rv,J));
   return j;
 }
 function collide(dt){
@@ -659,14 +733,11 @@ function collide(dt){
   R.forEach(r=>{ const j=collideWall(r,dt); if(j>PHYS.thud&&r.isPlayer) beep(90,0.08); });
 }
 
-// ---------- audio ----------
-const audio={};
-function initAudio(){ if(audio.ctx)return; try{ const C=new (window.AudioContext||window.webkitAudioContext)(); audio.ctx=C;
-  audio.g=C.createGain(); audio.g.gain.value=state.sound?0.06:0; audio.g.connect(C.destination);
-  audio.osc=C.createOscillator(); audio.osc.type='sawtooth'; audio.f=C.createBiquadFilter(); audio.f.type='lowpass'; audio.f.frequency.value=600;
-  audio.eg=C.createGain(); audio.eg.gain.value=0; audio.osc.connect(audio.f); audio.f.connect(audio.eg); audio.eg.connect(audio.g); audio.osc.start(); }catch(e){} }
-function beep(freq,len){ if(!audio.ctx||!state.sound)return; const C=audio.ctx,o=C.createOscillator(),g=C.createGain(); o.type='square'; o.frequency.value=freq; g.gain.value=0.08; o.connect(g); g.connect(C.destination); o.start(); g.gain.setTargetAtTime(0,C.currentTime+len*0.6,0.05); o.stop(C.currentTime+len+0.2); }
-function engine(speed,on){ if(!audio.ctx)return; audio.osc.frequency.setTargetAtTime(55+Math.abs(speed)*7,audio.ctx.currentTime,0.05); audio.eg.gain.setTargetAtTime(on?0.9:0,audio.ctx.currentTime,0.1); }
+// ---------- audio (audio.js: engine, music, beeps) ----------
+function initAudio(){ GPAudio.init(); GPAudio.setMuted(!state.sound); GPAudio.resume(); GPAudio.startMusic(); }
+const beep=(freq,len)=>GPAudio.beep(freq,len);
+function engine(speed,on){ const me=race&&race.racers[0], k=KARTS[me?me.kartIdx:state.kart].stats;
+  GPAudio.engine(speed,(18+k.speed*2.6)*SPEED.player,on,(keys.KeyW||keys.ArrowUp||window.__autopilot)?1:0); }
 
 // ---------- screens ----------
 const SCREENS=['sTitle','sSelect','sVote','sLoad','sPause','sResults','sCredits'];
@@ -678,10 +749,10 @@ let toastT=0; function toast(msg,sec){ $('hToast').textContent=msg; $('hToast').
 document.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{state.diff=+b.dataset.diff;document.querySelectorAll('[data-diff]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
 $('toonOn').onclick=()=>{state.toon=true;$('toonOn').setAttribute('aria-pressed','true');$('toonOff').setAttribute('aria-pressed','false');};
 $('toonOff').onclick=()=>{state.toon=false;$('toonOn').setAttribute('aria-pressed','false');$('toonOff').setAttribute('aria-pressed','true');};
-$('bPlay').onclick=()=>{initAudio(); if(audio.ctx&&audio.ctx.state==='suspended')audio.ctx.resume(); goSelect();};
+$('bPlay').onclick=()=>{initAudio(); goSelect();};
 $('bCredits').onclick=()=>show('sCredits'); $('bCredBack').onclick=()=>show('sTitle');
 $('bBack1').onclick=()=>{show('sTitle');setMode('title');};
-$('bToVote').onclick=startVote;
+$('bToVote').onclick=startTrackPick;
 if(matchMedia('(pointer:coarse)').matches&&!matchMedia('(pointer:fine)').matches)$('touchNote').hidden=false;
 
 function goSelect(){
@@ -701,7 +772,6 @@ function goSelect(){
 }
 
 // ---------- vote ----------
-let voteTimer=null;
 function drawTrackThumb(cv,T){
   const c=cv.getContext('2d'), W=cv.width,H=cv.height; c.clearRect(0,0,W,H);
   const xs=T.pts.map(p=>p[0]), zs=T.pts.map(p=>p[2]); const mnx=Math.min(...xs),mxx=Math.max(...xs),mnz=Math.min(...zs),mxz=Math.max(...zs);
@@ -714,29 +784,15 @@ function drawTrackThumb(cv,T){
   const s0=T.pts[0]; c.fillStyle='#fff7ff'; c.beginPath(); c.arc(X(s0),Z(s0),9,0,7); c.fill(); c.strokeStyle='#170b26'; c.lineWidth=3; c.stroke();
   if(!T.closed){const e=T.pts[T.pts.length-1]; c.fillStyle='#ffcb47'; c.beginPath(); c.arc(X(e),Z(e),9,0,7); c.fill(); c.stroke();}
 }
-function startVote(){
+// The player picks the track; that track is raced.
+function startTrackPick(){
   show('sVote'); setMode('vote');
-  const keysT=Object.keys(TRACKS); const votes={}; keysT.forEach(k=>votes[k]=[]); let mine=null;
-  const box=$('votes'); box.innerHTML='';
-  keysT.forEach(k=>{const T=TRACKS[k]; const b=document.createElement('button'); b.className='vcard'; b.id='v-'+k; b.setAttribute('aria-pressed','false');
-    b.innerHTML='<img class="shot" alt="Aerial view of '+T.name+'" src="track_'+k+'.jpg"><h3>'+T.name+'</h3><p>'+T.desc+' '+(T.closed?T.laps+' laps.':'Sprint, start to finish.')+' About '+Math.round(T.lengthGame/(T.closed?1:1))+' m'+(T.closed?' per lap':'')+'.</p><div class="chips" id="c-'+k+'"></div>';
-    b.onclick=()=>{ if(left<=0)return; mine=k; keysT.forEach(x=>$('v-'+x).setAttribute('aria-pressed',String(x===k))); renderVotes(); };
+  const box=$('votes'); box.innerHTML=''; let picked=false;
+  Object.keys(TRACKS).forEach(k=>{const T=TRACKS[k]; const b=document.createElement('button'); b.className='vcard'; b.id='v-'+k; b.setAttribute('aria-pressed','false');
+    b.innerHTML='<img class="shot" alt="Aerial view of '+T.name+'" src="track_'+k+'.jpg"><h3>'+T.name+'</h3><p>'+T.desc+' '+(T.closed?T.laps+' laps.':'Sprint, start to finish.')+' About '+Math.round(T.lengthGame)+' m'+(T.closed?' per lap':'')+'.</p>';
+    b.onclick=()=>{ if(picked)return; picked=true; b.setAttribute('aria-pressed','true'); b.classList.add('win'); $('voteNote').textContent='Racing on '+T.name+'.'; setTimeout(()=>startRace(k),400); };
     box.appendChild(b);});
-  const others=[0,1,2,3].filter(i=>i!==state.driver);
-  const aiVotes=others.map(()=>keysT[Math.floor(Math.random()*keysT.length)]);
-  const reveal=[2.5,5,7.5]; let left=10;
-  function renderVotes(){ keysT.forEach(k=>{ const el=$('c-'+k); let h='';
-      if(mine===k)h+='<span class="chip you">You · '+DRIVERS[state.driver].label+'</span>';
-      aiVotes.forEach((v,i)=>{ if(v===k&&10-left>=reveal[i]) h+='<span class="chip">'+DRIVERS[others[i]].label+'</span>'; });
-      el.innerHTML=h; }); }
-  $('voteTimer').textContent='10'; renderVotes();
-  clearInterval(voteTimer);
-  voteTimer=setInterval(()=>{ left=Math.max(0,left-0.25); $('voteTimer').textContent=Math.ceil(left); renderVotes();
-    if(left<=0){ clearInterval(voteTimer);
-      const tally={}; keysT.forEach(k=>tally[k]=0); if(mine)tally[mine]++; aiVotes.forEach(v=>tally[v]++);
-      const max=Math.max(...Object.values(tally)); const top=keysT.filter(k=>tally[k]===max); const win=top[Math.floor(Math.random()*top.length)];
-      $('v-'+win).classList.add('win'); $('voteNote').textContent=TRACKS[win].name+(top.length>1?' wins a tie, picked at random.':' wins the vote.');
-      setTimeout(()=>startRace(win),1400); } },250);
+  $('voteNote').textContent='Click a track to race on it.';
 }
 
 // ---------- race setup ----------
@@ -764,8 +820,9 @@ function buildRace(T,trackKey,get,lineup){
     if(isR||isG){ const g=o.geometry.clone(); g.applyMatrix4(o.matrixWorld); g.computeBoundingBox(); g.computeBoundingSphere();
       const c=new THREE.Mesh(g,colMat); c.visible=false; c.matrixAutoUpdate=false; c.updateMatrixWorld(true); c.userData.road=isR; (isR?road:ground).push(c); } }});
   const G=trackGeom(T);
-  race={T,G,root,road,solid:road.concat(ground),gaps:null,resets:[],racers:[],time:0,go:false,running:true,paused:false,count:3.6,startIdx:T.closed?0:6,laps:T.closed?T.laps:1,finishOrder:[],ended:false,endT:0,lastBeep:4};
-  race.gaps=findGaps(G,road); Object.assign(G,measureWidths(G,road,race.gaps.inGap));
+  race={T,G,root,road,solid:road.concat(ground),gaps:null,resets:[],racers:[],time:0,go:false,running:true,paused:false,count:3.6,startIdx:T.startIdx??(T.closed?0:6),finishIdx:T.finishIdx??(G.n-3),laps:T.closed?T.laps:1,finishOrder:[],ended:false,endT:0,lastBeep:4};
+  GPFx.init(raceScene);
+  computeFrames(G,road,!!T.banked); race.gaps=findGaps(G,road); Object.assign(G,measureWidths(G,road,race.gaps.inGap));
   lineup.forEach((l,slot)=>{ const ko=assemble(buildDriver(get(DRIVERS[l.d].file)),buildKart(KARTS[l.k],get(KARTS[l.k].file)));
     toonify(ko.group,state.toon); ko.group.scale.setScalar(KART.scale); root.add(ko.group);
     const r=makeRacer(slot,l.d,l.k,l.p,ko); r.lane=[0,-0.35,0.3,0.05][slot]; r.band=1; race.racers.push(r); });
@@ -776,12 +833,18 @@ function buildRace(T,trackKey,get,lineup){
 // player takes GRID.playerSlot; the AI karts fill the other slots in order
 function placeGrid(){ const ai=[0,1,2,3].filter(s=>s!==GRID.playerSlot);
   race.racers.forEach(r=>placeOnGrid(r,r.isPlayer?GRID.playerSlot:ai[r.i-1])); }
-function snapCamera(){ const p=race.racers[0]; race.camYaw=p.heading;
-  camPos.set(p.pos.x-Math.sin(p.heading)*CAM.back,p.pos.y+CAM.up,p.pos.z-Math.cos(p.heading)*CAM.back);
-  camLook.set(p.pos.x+Math.sin(p.heading)*CAM.lookAhead,p.pos.y+CAM.lookUp,p.pos.z+Math.cos(p.heading)*CAM.lookAhead); }
+function snapCamera(){ const p=race.racers[0]; race.camF=p.body.clone(); race.camUp=p.up.clone(); placeCamera(p); }
+// camera behind and above the kart in its own frame: camF trails the kart's direction, camUp its road's up (so the
+// view rolls with Sky Plaza's banked road); the distance stays locked to the kart
+function placeCamera(me){ const f=race.camF, u=race.camUp;
+  camPos.copy(me.pos).addScaledVector(f,-CAM.back).addScaledVector(u,CAM.up);
+  camLook.copy(me.pos).addScaledVector(f,CAM.lookAhead).addScaledVector(u,CAM.lookUp);
+  raceCam.position.copy(camPos); raceCam.up.copy(u); raceCam.lookAt(camLook); }
 // live hooks for the tuning panel: the grid can only move before GO, kart size applies at once
 function regrid(){ if(!race||race.go)return false; placeGrid(); snapCamera(); return true; }
 function applyKartScale(){ if(!race)return; race.racers.forEach(r=>{ r.ko.group.scale.setScalar(KART.scale); r.hull=hullOf(KARTS[r.kartIdx]); }); }
+// Laps count from the start line (progress is relative to it on a loop); a sprint ends at the map's finish line.
+function raceGoal(){ return race.G.closed?race.laps*race.G.n:race.finishIdx; }
 function togglePause(){ if(!race||race.ended)return; race.paused=!race.paused; if(race.paused){show('sPause');setMode('pause');engine(0,false);} else {show(null);setMode('race');} }
 $('bResume').onclick=togglePause;
 $('bRestart').onclick=()=>{ startRace(state.track); };
@@ -797,7 +860,7 @@ function moveRacer(r,dt,t){
   const G=race.G;
   if(r.finished&&!r.isPlayer){ stepRacer(r,dt,{throttle:0.3,steer:aiInput(r,dt,t).steer},t); return; }
   const inp=r.isPlayer?(race.ended?{throttle:0,steer:0}:(window.__autopilot?aiInput(r,dt,t):playerInput())):aiInput(r,dt,t); stepRacer(r,dt,inp,t);
-  const goal=G.closed?race.laps*G.n:G.n-3;
+  const goal=raceGoal();
   if(!r.finished&&race.go&&r.prog>=goal){ r.finished=true; r.finishTime=race.time; race.finishOrder.push(r); if(r.isPlayer){ beep(660,0.2);setTimeout(()=>beep(990,0.4),180); race.ended=true; race.endT=2.6; } }
 }
 function updateRace(dt,t){
@@ -812,32 +875,29 @@ function updateRace(dt,t){
   const steps=Math.max(1,Math.ceil(dt/PHYS.dt)), h=dt/steps;
   for(let s=0;s<steps;s++){ R.forEach(r=>moveRacer(r,h,t)); collide(h); }
   R.forEach(r=>{ const g=r.ko.group; g.position.copy(r.pos);
-    const fwd=V(Math.sin(r.heading),0,Math.cos(r.heading)); const up=r.up.clone(); const right=V().crossVectors(up,fwd).normalize(); const f2=V().crossVectors(right,up).normalize();
+    const up=r.up.clone(); const right=V().crossVectors(up,r.body).normalize(); const f2=V().crossVectors(right,up).normalize();
     g.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(right,up,f2));
-    animateKart(r.ko,r.speed,r.steer,dt); });
+    animateKart(r.ko,r.speed,r.steer,dt); r.level=driftLevel(r); GPFx.emit(r,dt); });
+  GPFx.update(dt);
   // ranking
   const order=[...R].sort((a,b)=>{ if(a.finished&&b.finished)return a.finishTime-b.finishTime; if(a.finished)return -1; if(b.finished)return 1; return b.prog-a.prog; });
   const me=R[0], place=order.indexOf(me)+1;
   $('hPos').innerHTML=place+'<sup>'+ord(place).replace(String(place),'')+'</sup>';
   const lap=Math.min(race.laps,Math.max(1,Math.floor(me.prog/G.n)+1));
-  $('hLap').textContent=G.closed?('Lap '+lap+'/'+race.laps):('Sprint · '+Math.max(0,Math.min(100,Math.round(me.prog/(G.n-3)*100)))+'%');
+  $('hLap').textContent=G.closed?('Lap '+lap+'/'+race.laps):('Sprint · '+Math.max(0,Math.min(100,Math.round((me.prog-race.startIdx)/(race.finishIdx-race.startIdx)*100)))+'%');
   $('hTime').textContent=fmt(race.time);
-  $('hSpeed').innerHTML=Math.round(Math.abs(me.speed)*6)+'<small>km/h (cartoon scale)</small>';
+  $('hSpeed').innerHTML=Math.round(Math.abs(me.speed)*SPEED.display)+'<small>km/h (cartoon scale)</small>';
   drawDrift(me);
   if(me.wrong>1.2&&!race.ended)toast('Wrong way',0.3);
   if(toastT>0){toastT-=dt; if(toastT<=0)$('hToast').hidden=true;}
-  engine(me.speed,race.go&&state.sound);
+  engine(me.speed,race.go);
   // camera
-  // the camera yaw trails the kart's heading a little, so turns and spins swing the view instead of snapping it
-  const aim=me.travel+wrapAngle(me.heading-me.travel)*CAM.driftLook;
-  let dy=wrapAngle(aim-race.camYaw);
-  race.camYaw+=dy*Math.min(1,dt*CAM.yawRate);
-  const cf=V(Math.sin(race.camYaw),0,Math.cos(race.camYaw));
-  // distance stays locked to the kart (a lerp would trail further behind the faster you go); only height is smoothed
-  const ky=Math.min(1,dt*CAM.posRate);
-  camPos.set(me.pos.x-cf.x*CAM.back,camPos.y+(me.pos.y+CAM.up-camPos.y)*ky,me.pos.z-cf.z*CAM.back);
-  camLook.set(me.pos.x+cf.x*CAM.lookAhead,camLook.y+(me.pos.y+CAM.lookUp-camLook.y)*ky,me.pos.z+cf.z*CAM.lookAhead);
-  raceCam.position.copy(camPos); raceCam.lookAt(camLook);
+  // the camera's direction trails the kart a little (turns and spins swing the view instead of snapping it) and shows
+  // part of the drift angle; its up follows the road's up, so on banked road the view tilts with the kart
+  const aim=rotAbout(me.fwd.clone(),me.up,angleAbout(me.fwd,me.body,me.up)*CAM.driftLook);
+  race.camUp.lerp(me.up,Math.min(1,dt*CAM.posRate)).normalize();
+  race.camF.lerp(aim,Math.min(1,dt*CAM.yawRate)); flatten(race.camF,race.camUp);
+  placeCamera(me);
   const fov=CAM.fov+CAM.fovBoost*Math.min(1,Math.max(0,me.speed)/CAM.fovSpeed);
   if(Math.abs(fov-raceCam.fov)>0.05){ raceCam.fov=fov; raceCam.updateProjectionMatrix(); }
   drawMini(order);
@@ -864,8 +924,8 @@ function showResults(order){
   setMode('results'); show('sResults'); engine(0,false);
   const me=race.racers[0], place=order.indexOf(me)+1;
   $('resTitle').textContent=place===1?'You win!':('You finished '+ord(place));
-  const G=race.G, goal=G.closed?race.laps*G.n:G.n-3;
-  $('resBody').innerHTML=order.map((r,i)=>'<tr class="'+(r.isPlayer?'me':'')+'"><td>'+ord(i+1)+'</td><td>'+DRIVERS[r.driverId].label+(r.isPlayer?' (you)':'')+'</td><td>'+KARTS[r.kartIdx].name+'</td><td class="num">'+(r.finished?fmt(r.finishTime):(Math.max(0,Math.min(99,Math.round(r.prog/goal*100)))+'% done'))+'</td></tr>').join('');
+  const G=race.G, goal=raceGoal();
+  $('resBody').innerHTML=order.map((r,i)=>'<tr class="'+(r.isPlayer?'me':'')+'"><td>'+ord(i+1)+'</td><td>'+DRIVERS[r.driverId].label+(r.isPlayer?' (you)':'')+'</td><td>'+KARTS[r.kartIdx].name+'</td><td class="num">'+(r.finished?fmt(r.finishTime):(Math.max(0,Math.min(99,Math.round((G.closed?r.prog/goal:(r.prog-race.startIdx)/(goal-race.startIdx))*100)))+'% done'))+'</td></tr>').join('');
   race.running=false;
 }
 
@@ -877,7 +937,7 @@ function frame(){ requestAnimationFrame(frame); const dt=Math.min(0.05,clock.get
   renderer.setViewport(0,0,innerWidth,innerHeight); renderer.setClearColor(0x170b26,1); renderer.clear();
 }
 addEventListener('resize',resize); resize();
-fetch('tracks.json').then(r=>r.json()).then(j=>{TRACKS=j;}).catch(()=>{ $('bPlay').disabled=true; $('bPlay').textContent='Could not load tracks'; });
+fetch('tracks.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{TRACKS=j;}).catch(()=>{ $('bPlay').disabled=true; $('bPlay').textContent='Could not load tracks'; });
 show('sTitle'); setMode('title'); frame();
 window.__gp={sim:(sec)=>{ if(!race)return; const n=Math.round(sec*30); for(let i=0;i<n&&mode==='race';i++){tAll+=1/30;updateRace(1/30,tAll);} },startRace,state,get race(){return race;},KARTS,DRIVERS,TRACKS:()=>TRACKS,loadGLB,buildKart,buildDriver,assemble,animateKart,toonify,collidePair,collideWall,hullOf,raceCam,DRIFT,JUMP,
   tune:{CAM,PHYS,GRID,KART,TUNE,DRIFT,SPEED,regrid,applyKartScale,snapCamera,restart:()=>{ if(race&&state.track)startRace(state.track); },get inRace(){return !!race;}}};
