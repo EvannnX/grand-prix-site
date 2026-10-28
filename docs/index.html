@@ -133,6 +133,12 @@ figcaption b{color:var(--ink);font-weight:600}
   <a href="#e-0145"><time>Oct 25 · 01:45</time>Real start lines, drift, sound and music</a>
   <a class="shift" href="#e-0205"><time>Oct 25 · 02:05 · Shift 10</time>Driving on Sky Plaza's twisted road</a>
   <a class="shift" href="#e-oct26"><time>Oct 26 · Shift 11</time>New drivers from the school mascot</a>
+  <a href="#e-oct26b"><time>Oct 26</time>Slow loading, and a cache</a>
+  <a href="#e-oct26c"><time>Oct 26</time>Mountain Run: tunnel and walls</a>
+  <a href="#e-oct26d"><time>Oct 26</time>Mountain Run: the map's own road</a>
+  <a href="#e-oct27"><time>Oct 27</time>Sky Plaza: air walls and the launch pad</a>
+  <a href="#e-oct28"><time>Oct 28</time>Sky Plaza: the jump at the end of the lap</a>
+  <a href="#e-oct28b"><time>Oct 28</time>Sky Plaza: finishing at the checkered line</a>
   <a href="#links"><time>Reference</time>Links and credits</a>
 </nav>
 
@@ -166,6 +172,12 @@ figcaption b{color:var(--ink);font-weight:600}
     <li><b>Start lines, drift and sound (me → Claude).</b> Races start and finish at the checkered lines in the maps; a sideways drift at any speed with smoke; a new engine sound and original background music.</li>
     <li><b>Twisted road (me → Claude).</b> Karts drive along the road surface in 3D, so they follow Sky Plaza's banked and upside-down road; the camera tilts with them; the engine is quieter than the music.</li>
     <li><b>Consent, with Prof. Fedtke (me + professor), then Image 2 (me).</b> We talked about consent again; I made four new drivers from NYU Shanghai's mascot instead of the leaders.</li>
+    <li><b>Loading (me → Claude).</b> After publishing, pages hung while loading; the game now restarts stalled downloads, preloads everything and keeps it on the device.</li>
+    <li><b>Mountain Run (me → Claude).</b> In the tunnel karts jumped between levels, and walls pushed back before the kart reached them; the racing line now follows the hairpin, walls stand at the real walls and road edges, the drop-offs have none, karts only jump at real gaps and fly off ledges instead of snapping down, and the line stays on one road through every loop.</li>
+    <li><b>The map's own road (me → Claude).</b> After the tunnel, walls blocked road I could drive, and in the air after a ramp I was pulled back onto another road; the walls now come from the map's hidden collision floor and the real rock and railings, jumps are left to physics, and the racing line keeps to that floor.</li>
+    <li><b>Sky Plaza (me → Claude).</b> Air walls on normal road and a launch pad I went straight through; the walls now stand at the railings, the racing line runs down the middle, and the pad throws the kart up.</li>
+    <li><b>Sky Plaza's last jump (me → Claude).</b> The race ended by itself just before a jump across a floating gap; the track is now a full lap, over the gap and down the tower to the start line.</li>
+    <li><b>Sky Plaza's finish line (me → Claude).</b> The race still ended before I crossed the finish line; the start and finish are now at the checkered line painted in the station building.</li>
   </ol>
 </article>
 
@@ -727,6 +739,207 @@ Kart 4 — Futuristic racer: ... pointed nose, small front wing, rounded rear wi
     <figure><button data-lb><img src="img/1026b-race-crab.jpg" alt="Crab Qilin racing on Flower Loop"></button><figcaption><b>Crab Qilin racing</b> on Flower Loop.</figcaption></figure>
   </div>
   <p>The drivers now have names in the game (Qilin, Crab Qilin, Grad Qilin, Delivery Qilin), since they are no longer real people. The old leader models and portraits are deleted from the game's files, under new file names so that no browser shows them from its cache.</p>
+</article>
+
+<article id="e-oct26b">
+  <time>Oct 26</time>
+  <h2>Slow loading, and a cache</h2>
+  <p>After the mascot update went online, the select screen sat at "Loading Qilin and the Classic" and never showed the kart. Later the track pictures on the track screen stayed empty too. I asked whether this was a browser problem, and said the game should have a cache that loads everything by itself.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1026c-preview-stuck.jpg" alt="Select screen with the preview stuck on Loading Qilin and the Classic"></button><figcaption><b>Stuck preview</b> on the published site.</figcaption></figure>
+    <figure><button data-lb><img src="img/1026c-tracks-empty.jpg" alt="Track screen with three empty picture frames"></button><figcaption><b>Track pictures</b> that never appeared.</figcaption></figure>
+  </div>
+  <h3>What was wrong</h3>
+  <p>The game itself was fine. Claude opened the published site, saw the same stuck preview, and timed the downloads. The new driver model <code>qilin1.glb</code> (2.2 MB) arrived at about 35 KB/s and was still not finished after a minute, while an old kart model of the same size took 1.3 seconds. Right after the update, the new files were not yet stored on GitHub's nearby CDN server (Singapore), and the first copy came through extremely slowly. A few minutes later all four took about a second.</p>
+  <p>Two things made it worse. First, the game waited forever for a download that had stalled, and kept waiting for it even after the server recovered, so only a page reload helped. Second, GitHub Pages lets browsers keep files for only ten minutes, and each picture only started downloading when its screen opened. On a slow route to github.io, the game was downloaded again from scratch on almost every visit.</p>
+  <h3>Three changes</h3>
+  <ul>
+    <li><b>Restarting stalled downloads.</b> If a download receives no data for 15 seconds, it starts again, up to three times. A slow download that is still moving is left alone, so large maps on a slow network are not cut off. If all three fail, the preview says so and clicking the driver again retries.</li>
+    <li><b>Preloading.</b> From the title screen on, the game downloads everything in the order it will be needed: pictures, then drivers and karts, then the maps. The title screen counts the files ("Getting the game ready: 5 of 18 files").</li>
+    <li><b>A cache on the device.</b> A service worker (a small script the browser runs for the site) keeps every game file on the player's device. Models and pictures come from there, with a quick background check for newer versions that costs a few bytes when nothing changed. The page and its scripts are checked online first so updates show at once, but if GitHub has not answered within three seconds the stored copy is used.</li>
+  </ul>
+  <h3>Testing</h3>
+  <p>The browser built into the Claude app does not run service workers, so Claude tested in a headless Chrome with a temporary profile:</p>
+  <div class="tw"><table>
+    <thead><tr><th>Visit</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>First</td><td>all 22 game files stored on the device</td></tr>
+      <tr><td>Second</td><td>21 of 21 files loaded from the device, 0 bytes downloaded; the kart preview appears in 0.25 s</td></tr>
+      <tr><td>With the network switched off</td><td>the game opens and the preview still loads</td></tr>
+    </tbody></table></div>
+  <p>The first visit still downloads the whole game once, about 45 MB. From mainland China github.io itself can be slow, so that first visit may still take a while; after it, the connection no longer matters.</p>
+</article>
+<article id="e-oct26c">
+  <time>Oct 26</time>
+  <h2>Mountain Run: tunnel and walls</h2>
+  <p>I asked Claude to fix Mountain Run again. Three problems: in the tunnel the kart kept flying between different levels of the tunnel; the walls on both sides were not calculated well, so near a wall the kart got bounced back while it had hardly touched it; and the place where you can fall off should not have a wall. The tunnel was the main one.</p>
+  <h3>The tunnel</h3>
+  <p>Claude drew the road from above, coloured by height, with the racing line on top. Inside the tunnel the road makes a long hairpin, but the racing line cut straight across the inside of the bend, from one arm of the road to the other. Along that shortcut there is no road, only the tunnel's wall, and the far arm is about a metre higher. The game took the missing road for a gap and launched every kart into a jump: through the tunnel wall, up a level, and down onto the other arm.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1026d-tunnel-map.jpg" alt="Top view of the tunnel hairpin: the old dashed line cuts across the bend, the new line follows the road round it, red dots mark the walls"></button><figcaption><b>Top view</b> of the hairpin: the old line (dashed) and the new one, with the walls.</figcaption></figure>
+    <figure><button data-lb><img src="img/1026d-tunnel-hairpin.jpg" alt="Kart driving round the hairpin inside the tunnel, chevron boards on the outer wall"></button><figcaption><b>In the hairpin</b>, which the karts now drive. The chevron boards on its wall show this is the way the map was built to be driven.</figcaption></figure>
+  </div>
+  <p>Claude traced the real road round the hairpin (step forward, find both road edges across the direction of travel, take the middle) and put those 45 points in place of the 9 that made the shortcut. The track got about 42 m longer, and the tunnel no longer has a gap in it.</p>
+  <p>Claude also found two places where a road deck runs 1.3 m and 2.4 m above the road. A kart bumping up underneath one could catch its underside and then end up on top of it. Now only a surface facing up counts as ground; the underside of a deck above does not.</p>
+  <h3>The walls</h3>
+  <p>The racing line is often not in the middle of the road: in places it runs a metre or more from the centre. The walls were placed at a fixed half-width from the line, so on one side the wall stood up to a metre inside the road (the bounce before touching anything), and on the other side it stood past the edge. Where the measurement failed, a wall closed in to 1.2 m.</p>
+  <p>Now each side of each line point is measured once, from the map itself, and stored with the track. The first version stopped at anything low: the tunnel's walkway curb, the strip of stone between the road and the chevron boards. When I drove it, I still hit air walls in several places, well before the real wall:</p>
+  <div class="gal">
+    <figure><button data-lb><img src="img/1026d-air-wall.jpg" alt="Kart stopped on the road in front of a chevron wall that is still several metres away"></button><figcaption><b>Stopped by nothing</b>, metres from the chevron wall.</figcaption></figure>
+  </div>
+  <p>So the second version only looks for things a kart would actually hit, at 0.4, 0.7 and 1 m above the road (the highest finds boards that stand on a banked edge rising toward them). Low curbs, the stone strip and the tunnel walkway are now ground the kart can drive onto, up to the wall behind them:</p>
+  <ul>
+    <li><b>A wall, board, railing or rock beside the road</b>: the wall is where it is. 997 of the 1,480 sides.</li>
+    <li><b>The road ends in a drop</b>: no wall, so a kart can go over the edge and is put back on the track. 74 sides, on the cliff edges and the narrow ramp between two jumps.</li>
+    <li><b>Grass past the edge</b> and nothing to hit nearby: the wall stands at the road edge plus a quarter metre, so karts still bounce off instead of driving onto the grass. 289 sides.</li>
+    <li>Over the jumps the old width is kept, or a barrier further out if there is one (120 sides).</li>
+  </ul>
+  <p>Measuring this when a race loads would take several seconds, so it is done once and saved in the track data. Flower Loop and Sky Plaza still measure their walls as before.</p>
+  <h3>Jumps and drops</h3>
+  <p>When I drove it again, the kart was thrown into the air in several places, or carried somewhere else, and none of it felt continuous. Where the road drops to a lower level, the kart did not fly forward and then fall; it was pulled straight down onto the road below. That is not how physics or a racing game works.</p>
+  <p>Claude found three causes:</p>
+  <ul>
+    <li><b>Jumps that were not jumps.</b> The game treated every stretch where the racing line leaves the asphalt as a gap to jump, launching the kart up and turning it toward the landing point. On 5 of the 15 stretches there is ground right under the line; the line just runs beside the road. Now a stretch only counts as a jump if most of it has nothing within 1.2 m below. On the remaining jumps, the take-off turns the kart at most 20° toward the landing, and steering in the air is half as strong.</li>
+    <li><b>Being pulled down.</b> A kart on the ground followed the surface even when it dropped by up to half a metre in one physics step (1/120 s), and the racing line's height pulled it down too. So at a step it stuck to the lower road. Now it only follows a drop of up to 15 cm per step, which is enough for any slope. A bigger drop makes it fly: at the 1.4 m step near the end it now travels about 4 m forward and lands 0.4 s later.</li>
+    <li><b>Bounced back up.</b> A kart that fell a little below the racing line was hopped back up onto it. That now only happens in a real jump that comes in short of the far edge.</li>
+  </ul>
+  <p>Two more things showed up while testing. Where the racing line runs on a strip of grass beside the road, the walls fell back to the old width, past a cliff edge, so karts fell beside a wall they could see. And the tunnel's walkway has small holes at the tunnel exit, which a kart dropped straight through because it only checked for ground under its centre. Now the walls there follow the edge of the ground, and a kart checks under its four wheels before it falls.</p>
+  <h3>Staying on one road</h3>
+  <p>At the tunnel exit I hit an air wall again and was then moved onto a road on a different level. I told Claude to keep the road continuous, and not to switch me between roads just because there is another road at a different height.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1026d-tunnel-exit-before.jpg" alt="Tunnel exit, kart stopped against an invisible wall"></button><figcaption><b>Before</b>: stopped at the tunnel exit, then moved to the road below.</figcaption></figure>
+    <figure><button data-lb><img src="img/1026d-tunnel-exit-after.jpg" alt="Tunnel exit, kart driving on along the road toward the chevron curve"></button><figcaption><b>After</b>: the same place, the kart drives on along the road.</figcaption></figure>
+  </div>
+  <p>It was the same problem as the tunnel hairpin, in more places. Where the road makes a loop or an S, the racing line jumped straight across, from one arm of the road to another that is lower, and the game treated the space between as a jump. Claude now checks every gap the line jumps: starting just before it, it follows the road step by step, never more than 0.9 m up or down at a time, so it stays on one road where roads cross or stack. If that walk meets the racing line again after the gap, the line follows the road instead. Five places changed this way: the tunnel exit loop, two corners near the start, an S-bend the old line cut straight across with three jumps, and the bend after it. Four jumps stay, because there the road really ends at a ramp over a drop.</p>
+  <p>Mountain Run is now about 1,030 m long instead of 780 m, and a race takes about 107 seconds instead of 88.</p>
+  <p>Two more fixes came out of the test races. The tunnel walkway rises to half a metre beside the wall, and the game only counted ground up to half a metre above the road, so a kart riding high on the walkway fell through it. And the AI karts now steer back toward the middle when they drift toward a side that has no wall.</p>
+  <h3>Testing</h3>
+  <p>Claude ran whole races in a headless Chrome with all four karts driven by the AI: ten normal races, and eight with the karts holding to the edges of the road on purpose (the last three of each after the second wall fix).</p>
+  <div class="tw"><table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Karts through the tunnel</td><td>all of them, round the hairpin, no jump inside</td></tr>
+      <tr><td>Resets in normal races</td><td>none</td></tr>
+      <tr><td>After the jump and drop fixes</td><td>five normal races on Mountain Run, two on Sky Plaza and two on Flower Loop: no resets; with karts at the edges, only falls off the open cliff inside the first U-bend</td></tr>
+      <tr><td>After following the road</td><td>six normal races on Mountain Run, two on Flower Loop and three on Sky Plaza: no resets; with karts at the edges, only falls off the open cliff inside the first U-bend</td></tr>
+      <tr><td>Resets with karts at the edges</td><td>karts that drove off a cliff edge with no wall, or off the ramp between two jumps (drops, so that is the fall working)</td></tr>
+      <tr><td>Flower Loop and Sky Plaza</td><td>one race each, no resets</td></tr>
+    </tbody></table></div>
+</article>
+
+<article id="e-oct26d">
+  <time>Oct 26</time>
+  <h2>Mountain Run: the map's own road</h2>
+  <p>After the tunnel there were still many places where I could see road I should be able to drive on, but something stopped me. I asked Claude to read the map's textures and UVs and work out which roads are really drivable. The other problem was after the ramps: I took off toward a road I could normally drive on, and halfway through the jump I was sent back onto a different road, maybe the long way round. In the air I was being bounced around.</p>
+  <h3>The road the map was built with</h3>
+  <p>Claude went through the map's materials first. Some textures are only road (asphalt, the tunnel floor), and some are atlases where the UVs decide what a face shows: one image holds the wooden boards with chevrons, the stone walkway and the purple cave rock, another the chevron rail, dirt and cliff rock. While doing this it found something better than colour: the map carries invisible meshes from the original game. <code>road_qms_001</code> covers the whole course, <code>road_001</code> covers the four wooden springboards, and one more covers a small jump board. Every face on them points up. They are the surface the original game let a kart drive on.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1026e-hidden-floor.jpg" alt="Top view after the tunnel with the hidden collision floor drawn in green over the road, the cave plaza and the springboards"></button><figcaption><b>The hidden floor</b> (green) after the tunnel: the asphalt, the shoulders, the whole cave plaza and the springboards. The orange ground between the road and the springboard on the right is not part of it.</figcaption></figure>
+  </div>
+  <p>With that floor drawn under the racing line, both problems had the same cause. Besides the sea jump, the racing line left the floor in six places. At the exit of the cave plaza it ran straight through the rock, which the game took for a jump. Three corners cut across ground beside the road. And two jumps made a shortcut, from the road onto the springboard and from the board into the plaza. The walls were measured from the racing line, so where the line was wrong the walls were wrong too, and they stood across road I could see.</p>
+  <p>In the air it was the line again. The game keeps track of the nearest point on the racing line, and during a jump that point could switch to another stretch of the line passing nearby. Then three things acted on the kart: the jump help steered it toward that stretch's landing point, the line's height worked as a floor and hopped the kart up when it was below it, and the walls of that stretch pushed it sideways.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1026e-cave-before.jpg" alt="Top view of the cave plaza before: the racing line runs from the plaza straight through the rock to the road, and jumps across from the road to the springboard"></button><figcaption><b>Before</b>: the line jumps from the road onto the springboard (right), and leaves the plaza through the rock (left).</figcaption></figure>
+    <figure><button data-lb><img src="img/1026e-cave-after.jpg" alt="Top view of the cave plaza after: the racing line follows the road loop into the plaza, between the ramps and out through the arch"></button><figcaption><b>After</b>: the line follows the road loop into the plaza, runs between the ramps and leaves through the arch. Red: walls; blue: edges that drop away.</figcaption></figure>
+  </div>
+  <h3>Walls from the map</h3>
+  <p>On Mountain Run the walls are no longer measured from the racing line. A kart now hits what the map has:</p>
+  <ul>
+    <li><b>The real faces</b> of the rock, railings, tunnel walls and boards that stand on or beside the floor, tested at the kart's body height (4,899 faces). Anything lower than 22 cm above the wheels, like a curb or a seam, is driven over.</li>
+    <li><b>The floor's outer edges</b>, where ground or a barrier continues past the road (1,412 pieces, worked out once and saved with the track).</li>
+    <li><b>No wall</b> where the edge drops away: the cliffs over the sea, the sides of the springboards, the end of the road before the sea jump, and the steps of the wooden bridge, which comes down in drops of 0.5 to 1.4 m. A kart flies off there.</li>
+  </ul>
+  <p>Off the road now means off that floor: a kart off it is slowed, and put back on the track if it stays off for 1.6 seconds. Flower Loop and Sky Plaza keep their old walls.</p>
+  <h3>Jumps that are my own</h3>
+  <p>My jumps are now only physics: no turn toward a landing point, no steering toward the line in the air, and no floor from the line's height. The nearest line point can only move on a few points while the kart is in the air. The one help left is at the sea jump, where the road ends, and only when I take it straight on.</p>
+  <p>The wooden chevron boards are springboards. Without anything extra, the board by the road loop threw the kart about 12 m at top speed, 1.5 m short of the plaza, and it fell into the gap. Now a kart leaving a board gets 6 m/s upward. The direction stays mine: in a simulated jump the kart's direction changed by at most 0.04° between frames in the air, and it landed in the plaza.</p>
+  <div class="gal">
+    <figure><button data-lb><img src="img/1026e-board-jump.jpg" alt="Kart in the air off the wooden springboard, flying into the cave plaza"></button><figcaption><b>Off the springboard</b>, flying straight into the cave plaza.</figcaption></figure>
+  </div>
+  <h3>The racing line and the AI</h3>
+  <p>Claude moved the racing line onto the floor with a path search over it: small cells, each step costing more the closer it runs to a wall, up a curb's height at most, down a step of up to 2 m. That changed the cave exit, the two corners, the path through the plaza (between the ramps instead of over one) and the start of the road loop. The AI's line now drives the road loop instead of the springboard shortcut, which is still there for me. Points that ran close to a wall were moved toward the middle. The race is now 986 m from start to finish, 21 m more than before.</p>
+  <p>The AI karts no longer drift on this map. With real edges, a drifting kart slid wide and over the drop; in the first test races that was nearly every fall. They also keep closer to their lane. A race with the AI driving my kart now takes about 131 seconds instead of 107, mostly because of the drifting and the fake jumps that are gone.</p>
+  <p>Finding the ground under a kart now uses the floor directly instead of casting a ray through the whole map, which made the physics three times faster.</p>
+  <h3>Testing</h3>
+  <p>As before, whole races in a headless Chrome with all four karts driven by the AI, plus a scripted jump off the springboard.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Mountain Run, normal races (final version)</td><td>eight races, no resets</td></tr>
+      <tr><td>Flower Loop and Sky Plaza, since the change</td><td>three races each, no resets</td></tr>
+      <tr><td>Springboard jump to the cave plaza</td><td>flies straight, lands in the plaza, no reset</td></tr>
+      <tr><td>Karts held at the road edges on purpose</td><td>they fall where an edge drops away (the open cliffs, the inside of the wooden bridge); that is the drop working</td></tr>
+      <tr><td>Physics time for 6.7 s of racing</td><td>1.6 s before, 0.5 s after</td></tr>
+    </tbody></table></div>
+  <p>I have not driven this version myself yet.</p>
+</article>
+
+<article id="e-oct27">
+  <time>Oct 27</time>
+  <h2>Sky Plaza: air walls and the launch pad</h2>
+  <p>Mountain Run was fine now. On the space station map there were air walls in many places on normal road. And where there is a launch pad on the road, it did not launch me; the kart went straight through the top of it.</p>
+  <h3>The walls</h3>
+  <p>Sky Plaza's road twists, all the way to upside down, so the Mountain Run approach (a floor that faces up) does not fit it. Its walls are still measured from the racing line, but they were only searched for up to the half-width recorded with the line, and the line wobbled by up to a metre and ran close to one side in places. The road is about 7 m wide between the railings almost everywhere, so on the far side of the line the wall stood in the middle of the road. From point 165 to 196, on the twisted straight with the launch pad, the right-hand wall had closed in to the 1.2 m minimum.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1027-sky-walls-before.jpg" alt="Sky Plaza's twisted straight with the old walls drawn: one red line runs down the middle of the road, the white racing line zigzags"></button><figcaption><b>Before</b>: one wall (red) runs down the middle of the road; the racing line (white) zigzags. The blue hexagon is the launch pad.</figcaption></figure>
+    <figure><button data-lb><img src="img/1027-sky-walls-after.jpg" alt="The same straight with the new walls at both railings and a smooth racing line in the middle"></button><figcaption><b>After</b>: the walls at the railings, the line in the middle.</figcaption></figure>
+  </div>
+  <p>Claude now measures each side by walking outward across the road, in the road's own tilted plane, until the road and the map's hidden collision floor end, and saves the result with the track. Then it moved the racing line to halfway between the two walls and smoothed it, and measured the walls once more. 232 of the 556 sides moved outward by more than 30 cm in the first pass.</p>
+  <h3>The launch pad</h3>
+  <p>The pad is its own mesh lying on the road, and the game did not count it as road, so it was not solid and the kart sank into it. Now it is solid, and a kart that drives onto it is thrown off the road at 8 m/s. Because gravity on this twisted road pulls toward the road, the kart comes down on the road again: 1.7 m up, half a second in the air, about 6 m further on. The AI karts that cross it jump too.</p>
+  <div class="gal">
+    <figure><button data-lb><img src="img/1027-sky-pad-jump.jpg" alt="Kart in the air above Sky Plaza's twisted straight after the launch pad"></button><figcaption><b>Off the pad</b>, 1.7 m above the road.</figcaption></figure>
+  </div>
+  <h3>Testing</h3>
+  <div class="tw"><table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Sky Plaza, normal races</td><td>four races, no resets; the AI karts jump off the pad</td></tr>
+      <tr><td>Sky Plaza, karts held at the road edges</td><td>one race, no resets</td></tr>
+      <tr><td>Mountain Run and Flower Loop</td><td>two races and one, no resets</td></tr>
+      <tr><td>A race with the AI driving my kart</td><td>about 41.5 s instead of 46</td></tr>
+    </tbody></table></div>
+  <p>I have not driven this version myself yet.</p>
+</article>
+
+<article id="e-oct28">
+  <time>Oct 28</time>
+  <h2>Sky Plaza: the jump at the end of the lap</h2>
+  <p>When I drove the space station track, the race ended by itself just before a jump. There is a floating stretch there, and you should be able to fly across it.</p>
+  <p>Sky Plaza is a circuit. After the ring that hangs upside down under the station, a short road sticks out into space: it curves down until it faces the same way as the side of the tall tower below it, and ends 35 m up, with a launch pad on its tip. After a gap of about 9 m the tower's face carries on, curves down 27 m and becomes the start straight. The racing line stopped where that short road begins, and the finish was put two points before the end of the line, so the race finished there.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1028-sky-exit-before.jpg" alt="The ring under the station with the road stub sticking out into space and the tower below; the racing line stops at the start of the stub"></button><figcaption><b>Before</b>: the racing line (white) stops at the start of the stub.</figcaption></figure>
+    <figure><button data-lb><img src="img/1028-sky-exit-after.jpg" alt="The same view with the racing line running along the stub, across the gap and down the tower to point 0"></button><figcaption><b>After</b>: along the stub, across the gap and down the tower to the start line (0).</figcaption></figure>
+  </div>
+  <p>Claude traced the stub and the tower along their surfaces and added them to the line (76 points, 56 m), with the gap between them as a jump. The track is now a one-lap circuit that ends at the start line, and the walls along the new part were measured the same way as the rest. Over the gap there are no walls, so nothing pushes a kart in the air.</p>
+  <p>My kart made the jump straight away: the pad on the tip throws it up, it is in the air for about half a second and lands at the top of the tower. The AI karts are a little slower there and dropped behind the tower's edge, so a launch pad in front of a gap now also gives the usual jump help toward the landing point.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Sky Plaza, normal races</td><td>four full laps, no resets; one lap takes about 49 s</td></tr>
+      <tr><td>Sky Plaza, karts held at the road edges</td><td>one race, no resets</td></tr>
+      <tr><td>Mountain Run and Flower Loop</td><td>one race each, no resets</td></tr>
+    </tbody></table></div>
+  <p>I have not driven this version myself yet.</p>
+</article>
+
+<article id="e-oct28b">
+  <time>Oct 28</time>
+  <h2>Sky Plaza: finishing at the checkered line</h2>
+  <p>It still did not finish at the line. I need to drive across the finish line before the race ends.</p>
+  <p>The start had been put at point 6 of the racing line, a default for tracks without a known start, which is just below the tower and nowhere near the finish line. Claude looked for the checkered pattern in the map's textures: it is a band in one of the atlas images, and the faces whose UVs use that band lie flat across the road inside the orange station building, 0.56 m past line point 85.</p>
+  <div class="gal wide">
+    <figure><button data-lb><img src="img/1028-sky-finish-line.jpg" alt="Top view inside the station building: the checkered line across the road, the racing line running through it, the four karts on the grid behind it"></button><figcaption><b>From above</b>: the checkered line across the road in the station building, with the grid behind it.</figcaption></figure>
+    <figure><button data-lb><img src="img/1028-sky-start.jpg" alt="The race start seen from behind my kart in the station building, countdown at 3"></button><figcaption><b>The start</b> now, inside the building.</figcaption></figure>
+  </div>
+  <p>The start is now the first line point past it (point 86), so the grid lines up 3 to 8 m behind the checkered line and a lap only counts once a kart has driven over it. In a test race every kart finished between 0.2 and 0.5 m after the line. A lap still takes about 49 seconds.</p>
+  <div class="tw"><table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Where karts finish</td><td>all four, 0.2 to 0.5 m past the checkered line</td></tr>
+      <tr><td>Sky Plaza, normal races</td><td>three more races, no resets</td></tr>
+    </tbody></table></div>
+  <p>I have not driven this version myself yet.</p>
 </article>
 
 <article id="links">
