@@ -104,6 +104,17 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:800}
 tr.me td{color:var(--lime)}
 .wide{width:min(720px,100%)}
 .credits p{margin:0 0 8px;color:var(--muted);font-size:14px;line-height:1.5}
+.how{max-width:860px}
+.how .lead{margin:0;color:var(--ink);font-size:16px}
+.how h3{margin:4px 0 8px;font-size:18px}
+.howgrid{display:grid;grid-template-columns:1fr 1.3fr;gap:20px}
+@media (max-width:760px){.howgrid{grid-template-columns:1fr}}
+.how ul{margin:0 0 10px;padding-left:18px;color:var(--muted);font-size:14px;line-height:1.5}
+.how li{margin-bottom:4px}
+.how b{color:var(--ink)}
+.ctl{border-collapse:collapse;font-size:14px}
+.ctl td{padding:6px 8px;border-bottom:2px solid var(--panel-2);color:var(--muted)}
+.ctl td:first-child{white-space:nowrap;color:var(--ink)}
 .credits b{color:var(--ink)}
 .credits a{color:var(--cyan)}
 @media (prefers-reduced-motion: reduce){.btn{transition:none}}
@@ -121,14 +132,47 @@ tr.me td{color:var(--lime)}
     <span class="label">AI difficulty</span>
     <div class="seg" role="group" aria-label="Difficulty"><button data-diff="0" aria-pressed="false">Easy</button><button data-diff="1" aria-pressed="true">Normal</button><button data-diff="2" aria-pressed="false">Hard</button></div>
   </div>
-  <div class="row">
-    <span class="label">Look</span>
-    <div class="seg" role="group" aria-label="Shading"><button id="toonOn" aria-pressed="true">Cartoon</button><button id="toonOff" aria-pressed="false">As exported</button></div>
-  </div>
-  <div class="row"><button class="btn" id="bPlay">Play</button><button class="btn ghost" id="bCredits">Credits</button><a class="btn ghost" href="../docs/index.html" style="text-decoration:none">Documentation</a></div>
+  <div class="row"><button class="btn" id="bPlay">Play</button><button class="btn ghost" id="bHowTitle">How to play</button><button class="btn ghost" id="bCredits">Credits</button><a class="btn ghost" href="../docs/index.html" style="text-decoration:none">Documentation</a></div>
   <p class="keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrow keys to drive · hold <kbd>Shift</kbd> or <kbd>Space</kbd> while turning to drift · <kbd>R</kbd> back on track · <kbd>Esc</kbd> pause · <kbd>M</kbd> sound and music</p>
   <p class="keys" id="touchNote" hidden>This game needs a keyboard.</p>
   <p class="keys" id="preloadNote" aria-live="polite"></p>
+</section>
+
+<section class="screen dim" id="sHow" hidden>
+  <div class="panel wide how">
+    <h2 style="font-size:36px">How to play</h2>
+    <p class="lead">Pick a driver, a kart and a track, then race three AI drivers. Finish first.</p>
+    <div class="howgrid">
+      <div>
+        <h3>Controls</h3>
+        <table class="ctl"><tbody>
+          <tr><td><kbd>W</kbd> or <kbd>↑</kbd></td><td>accelerate</td></tr>
+          <tr><td><kbd>S</kbd> or <kbd>↓</kbd></td><td>brake, then reverse</td></tr>
+          <tr><td><kbd>A</kbd> <kbd>D</kbd> or <kbd>←</kbd> <kbd>→</kbd></td><td>steer</td></tr>
+          <tr><td><kbd>Shift</kbd> or <kbd>Space</kbd></td><td>hold while turning to drift</td></tr>
+          <tr><td><kbd>R</kbd></td><td>back on the track</td></tr>
+          <tr><td><kbd>Esc</kbd> or <kbd>P</kbd></td><td>pause</td></tr>
+          <tr><td><kbd>M</kbd></td><td>sound and music on or off</td></tr>
+        </tbody></table>
+      </div>
+      <div>
+        <h3>Racing</h3>
+        <ul>
+          <li><b>Drift</b> through corners: the gauge at the bottom right fills, first blue, then gold. Let go for a speed boost; the longer the drift, the bigger the boost.</li>
+          <li><b>Jumps.</b> The wooden chevron boards on Mountain Run and the blue pads on Sky Plaza throw you into the air.</li>
+          <li><b>Fall off</b> the track or get stuck and you are put back on it after a moment (or press <kbd>R</kbd>).</li>
+          <li>The <b>map</b> in the top right shows everyone's place; <b>Wrong way</b> means turn around.</li>
+        </ul>
+        <h3>Tracks</h3>
+        <ul>
+          <li><b>Flower Loop</b>: three laps.</li>
+          <li><b>Mountain Run</b>: a long downhill sprint through tunnels, from the start line to the finish line.</li>
+          <li><b>Sky Plaza</b>: one lap round a space station, upside down under a ring and across a gap.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="row"><button class="btn" id="bHowGo">Choose a driver</button><button class="btn ghost" id="bHowBack">Back</button></div>
+  </div>
 </section>
 
 <section class="screen" id="sSelect" hidden>
@@ -261,7 +305,7 @@ const SPEED={player:0.5,ai:0.5,display:12};
 // more than about 37° (normal's height below flatY), gravity pulls toward the road instead of straight down.
 const JUMP={gravity:18,snap:0.5,snapDown:0.15,gapDepth:1.2,stepUp:0.6,clear:0.5,maxVy:9,fallReset:3,airReset:3,roadBand:3,groundAbove:0.8,holdDepth:1.2,launchMax:25,launchSpeed:8,airSteer:2,maxAim:0.35,flatY:0.8,maxSurfaceTilt:0.7,popUp:0.3,lineAlign:0.9,rampLift:6,rampGrace:0.25,padLift:8}; // maxSurfaceTilt: cos 45°; popUp: below this a landing snaps, above it the kart hops; lineAlign: cos of the most a player may head off the line and still get the launch help; rampLift: upward speed off a springboard (m/s), given when the kart leaves the ground within rampGrace s of being on one (the drawn board reaches a little past its collision floor); padLift: upward speed off a launch pad (m/s) up
 const DIFF=[{name:'Easy',top:0.80,band:0.10},{name:'Normal',top:0.92,band:0.06},{name:'Hard',top:1.0,band:0.03}];
-const state={diff:1,toon:true,driver:0,kart:0,track:null,sound:true};
+const state={diff:1,driver:0,kart:0,track:null,sound:true};
 let TRACKS=null;
 
 // ---------- renderer ----------
@@ -409,7 +453,7 @@ function updatePreview(){
   Promise.all([loadGLB(d.file),loadGLB(k.file)]).then(([dg,kg])=>{
     if(my!==previewReq)return;
     if(previewObj)turn.remove(previewObj.group);
-    previewObj=assemble(buildDriver(dg),buildKart(k,kg)); toonify(previewObj.group,state.toon); turn.add(previewObj.group);
+    previewObj=assemble(buildDriver(dg),buildKart(k,kg)); toonify(previewObj.group,true); turn.add(previewObj.group);
     $('previewMsg').hidden=true;
   }).catch(()=>{ if(my===previewReq)$('previewMsg').textContent='Could not load the preview. Click the driver again to retry.'; });
 }
@@ -857,16 +901,20 @@ function engine(speed,on){ const me=race&&race.racers[0], k=KARTS[me?me.kartIdx:
   GPAudio.engine(speed,(18+k.speed*2.6)*SPEED.player,on,(keys.KeyW||keys.ArrowUp||window.__autopilot)?1:0); }
 
 // ---------- screens ----------
-const SCREENS=['sTitle','sSelect','sVote','sLoad','sPause','sResults','sCredits'];
+const SCREENS=['sTitle','sHow','sSelect','sVote','sLoad','sPause','sResults','sCredits'];
 let mode='title';
 function show(id){ SCREENS.forEach(s=>$(s).hidden=(s!==id)); }
 function setMode(m){ mode=m; $('hud').hidden=!(m==='race'||m==='pause'); }
 let toastT=0; function toast(msg,sec){ $('hToast').textContent=msg; $('hToast').hidden=false; toastT=sec; }
 
 document.querySelectorAll('[data-diff]').forEach(b=>b.onclick=()=>{state.diff=+b.dataset.diff;document.querySelectorAll('[data-diff]').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));});
-$('toonOn').onclick=()=>{state.toon=true;$('toonOn').setAttribute('aria-pressed','true');$('toonOff').setAttribute('aria-pressed','false');};
-$('toonOff').onclick=()=>{state.toon=false;$('toonOn').setAttribute('aria-pressed','false');$('toonOff').setAttribute('aria-pressed','true');};
-$('bPlay').onclick=()=>{initAudio(); goSelect();};
+// Play shows how to play first; the title screen also opens it on its own
+let howNext='select';
+function showHow(next){ howNext=next; show('sHow'); $('bHowGo').textContent=next==='select'?'Choose a driver':'Back to the menu'; $('bHowBack').hidden=next!=='select'; }
+$('bPlay').onclick=()=>{initAudio(); showHow('select');};
+$('bHowTitle').onclick=()=>showHow('title');
+$('bHowGo').onclick=()=>{ if(howNext==='select')goSelect(); else show('sTitle'); };
+$('bHowBack').onclick=()=>show('sTitle');
 $('bCredits').onclick=()=>show('sCredits'); $('bCredBack').onclick=()=>show('sTitle');
 $('bBack1').onclick=()=>{show('sTitle');setMode('title');};
 $('bToVote').onclick=startTrackPick;
@@ -941,7 +989,7 @@ function buildRace(T,trackKey,get,lineup){
   GPFx.init(raceScene);
   computeFrames(G,road,!!T.banked); race.gaps=findGaps(G,road,race.solid,!!T.banked); Object.assign(G,race.mapCol?openWalls(G):T.wl?storedWalls(T):measureWidths(G,road,race.gaps.inGap));
   lineup.forEach((l,slot)=>{ const ko=assemble(buildDriver(get(DRIVERS[l.d].file)),buildKart(KARTS[l.k],get(KARTS[l.k].file)));
-    toonify(ko.group,state.toon); ko.group.scale.setScalar(KART.scale); root.add(ko.group);
+    toonify(ko.group,true); ko.group.scale.setScalar(KART.scale); root.add(ko.group);
     const r=makeRacer(slot,l.d,l.k,l.p,ko); r.lane=[0,-0.35,0.3,0.05][slot]; r.band=1; race.racers.push(r); });
   placeGrid();
   snapCamera();

@@ -80,6 +80,14 @@ figcaption b{color:var(--ink);font-weight:600}
 .lb button{position:fixed;top:max(14px,env(safe-area-inset-top,0px));right:max(14px,env(safe-area-inset-right,0px));font:600 14px var(--mono);background:var(--paper-2);color:var(--ink);border:1px solid var(--rule);border-radius:999px;padding:8px 14px;cursor:pointer}
 [hidden]{display:none!important}
 .foot{color:var(--muted);font-size:14px}
+.chats{margin-top:26px}
+.chats h2{font:800 20px/1.2 var(--display);margin:0 0 10px}
+.chatgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:12px}
+.chat{display:block;text-decoration:none;color:var(--ink);background:var(--paper);border:1px solid var(--rule);border-radius:12px;padding:14px 16px}
+.chat:hover{border-color:var(--violet);color:var(--ink)}
+.chat small{display:block;font:600 11px/1.3 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--lime);margin-bottom:6px}
+.chat b{display:block;font:800 18px/1.2 var(--display);margin-bottom:4px}
+.chat span{font-size:14px;line-height:1.45;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -91,7 +99,15 @@ figcaption b{color:var(--ink);font-weight:600}
 <section class="hero">
   <span class="eyebrow">AI Writathon · Perspectives on the Humanities · NYU Shanghai · Fall 2026</span>
   <h1>Dev journal: building a racing game with generative AI</h1>
-  <p class="lede">A dated record of how the game was made, from the first idea on October 21 to the playable build on October 24: what I asked the AI tools for, what they produced, what I kept or threw away, and every point where the plan changed. Every image opens full size.</p>
+  <p class="lede">A dated record of how the game was made, from the first idea on October 21 to the playable build on October 24 and the fixes after it: what I asked the AI tools for, what they produced, what I kept or threw away, and every point where the plan changed. Every image opens full size.</p>
+  <div class="chats">
+    <h2>My chats with the AI tools</h2>
+    <div class="chatgrid">
+      <a class="chat" href="https://claude.ai/share/16e02a8f-54f5-4f00-9d6e-8049f235be62" target="_blank" rel="noopener"><small>1 · Claude</small><b>Game design and PRD</b><span>The overall plan: the idea, the product requirements document and how it changed.</span></a>
+      <a class="chat" href="https://chatgpt.com/share/6adec1b3-7064-83ee-afa2-45dfde6dd620" target="_blank" rel="noopener"><small>2 · ChatGPT, Image 2</small><b>Image workflow</b><span>Generating the driver and kart images that became the 3D models.</span></a>
+      <a class="chat" href="chat.html"><small>3 · Claude Code</small><b>Building and fixing the game</b><span>Every prompt I typed in the Claude Code window and Claude's replies, Oct 24–28.</span></a>
+    </div>
+  </div>
   <div class="facts">
     <div class="fact"><b>4</b><span>drivers, Image 2 → Tripo → auto-rig</span></div>
     <div class="fact"><b>4</b><span>karts, Image 2 → Tripo → Smart Segment</span></div>
@@ -139,6 +155,7 @@ figcaption b{color:var(--ink);font-weight:600}
   <a href="#e-oct27"><time>Oct 27</time>Sky Plaza: air walls and the launch pad</a>
   <a href="#e-oct28"><time>Oct 28</time>Sky Plaza: the jump at the end of the lap</a>
   <a href="#e-oct28b"><time>Oct 28</time>Sky Plaza: finishing at the checkered line</a>
+  <a href="#e-oct28c"><time>Oct 28</time>How to play, and the chat records</a>
   <a href="#links"><time>Reference</time>Links and credits</a>
 </nav>
 
@@ -178,6 +195,7 @@ figcaption b{color:var(--ink);font-weight:600}
     <li><b>Sky Plaza (me → Claude).</b> Air walls on normal road and a launch pad I went straight through; the walls now stand at the railings, the racing line runs down the middle, and the pad throws the kart up.</li>
     <li><b>Sky Plaza's last jump (me → Claude).</b> The race ended by itself just before a jump across a floating gap; the track is now a full lap, over the gap and down the tower to the start line.</li>
     <li><b>Sky Plaza's finish line (me → Claude).</b> The race still ended before I crossed the finish line; the start and finish are now at the checkered line painted in the station building.</li>
+    <li><b>Front page, instructions and chats (me → Claude).</b> The front page shows the Qilin drivers; a How to play screen comes before the race; the "As exported" look is gone; the three chat records are linked at the top of this journal.</li>
   </ol>
 </article>
 
@@ -940,6 +958,14 @@ Kart 4 — Futuristic racer: ... pointed nose, small front wing, rounded rear wi
       <tr><td>Sky Plaza, normal races</td><td>three more races, no resets</td></tr>
     </tbody></table></div>
   <p>I have not driven this version myself yet.</p>
+</article>
+
+<article id="e-oct28c">
+  <time>Oct 28</time>
+  <h2>How to play, and the chat records</h2>
+  <p>The site's front page still showed the old drivers, the leaders' caricatures, in both pictures. They now show the four Qilin drivers in their karts and a race on Sky Plaza, rendered from the game itself.</p>
+  <p>I wanted a page that tells players how to play, before or right after they press Play, and I did not want the "As exported" look option, because it makes the game look unfinished. Play now opens a How to play screen first: the controls, drifting and the boost, the springboards and launch pads, being put back on the track, and what each track is. The title screen has a How to play button too. The look option is gone; the game always uses the cartoon shading.</p>
+  <p>I also wanted my chats with the AI tools at the top of this documentation: the Claude chat where the game design and PRD were worked out, the ChatGPT chat with the Image 2 workflow, and this Claude Code window. The first two are share links. For the third, Claude made a page from the conversation's own record: my prompts and its written replies, in order, without the tool calls and their output, and with local folder paths shortened.</p>
 </article>
 
 <article id="links">

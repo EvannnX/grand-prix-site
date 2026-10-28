@@ -35,5 +35,5 @@ then open http://localhost:8000/.
 ## Credits
 
 - Tracks: Map_njxz, Map_tkgcz and Map_qms by amogusstrikesback2 on Sketchfab, CC BY 4.0, rescaled and compressed.
-- Drivers and karts: generated with Image 2 and Tripo AI. Drivers are shown as Driver 01–04 without names, as agreed with the course instructor.
+- Drivers and karts: generated with Image 2 and Tripo AI. The drivers are four versions of NYU Shanghai's Qilin mascot.
 - Engine: three.js (MIT). Code drafted with Claude.
