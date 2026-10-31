@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PRD（中文早期方案） | NYU Shanghai Grand Prix</title><style>*{box-sizing:border-box}html{color-scheme:dark;scroll-behavior:smooth}body{margin:0;background:#121016;color:#f3eef7;font:18px/1.65 Georgia,"Times New Roman",serif}a{color:#c0a0f5}a:hover{color:#c8f04b}header{background:#1a1721;border-bottom:1px solid #332c3f;padding:18px max(20px,calc((100vw - 1040px)/2));font-family:system-ui,sans-serif}nav{display:flex;gap:20px;flex-wrap:wrap}main{max-width:1040px;margin:auto;padding:30px 20px 70px}h1,h2,h3{font-family:system-ui,sans-serif;line-height:1.25}h1{font-size:clamp(28px,5vw,42px)}h2{margin-top:44px;font-size:26px;color:#c8f04b}p,li{overflow-wrap:anywhere}.notice{padding:18px 22px;border:1px solid #544167;border-radius:12px;background:#231f2c;font:15px/1.6 system-ui,sans-serif;margin:24px 0}.table-scroll{overflow-x:auto;margin:20px 0}table{border-collapse:collapse;width:100%;min-width:540px;font-size:15px}th,td{border:1px solid #44394f;padding:10px 12px;text-align:left;vertical-align:top}th{background:#231f2c;font-family:system-ui,sans-serif}code{font-size:.9em;background:#231f2c;padding:2px 4px}li{margin:6px 0}.widget-note{color:#ab9fba;font-style:italic}footer{border-top:1px solid #332c3f;padding-top:24px;margin-top:40px;font:14px/1.6 system-ui,sans-serif}</style></head>
+<body><header><nav aria-label="Site"><a href="../index.html">Grand Prix</a><a href="index.html">Dev journal</a><a href="prd-en.html">English PRD</a><a href="../play/index.html">Play the game</a></nav></header><main><h1>PRD（中文早期方案）</h1><p>NYU Shanghai Grand Prix / October 21, 2026</p><aside class="notice">这是从 Claude 导出文件中恢复的 2026 年 10 月 21 日早期方案，保留了当时的联机设计，不代表游戏当前功能。后续修改请查看开发日志。Markdown 导出中不包含两处嵌入式图表，正文已标注；下方可下载原始文本。<br><a href="prd-zh.md" download>下载原始 Markdown</a></aside><h2>1. 项目概述</h2>
+<p>一个在浏览器里运行的 3D 联机小赛车游戏:玩家进房间后选车手 + 选车,10 秒投票选地图,然后开跑。车和车手全部由 GenAI 生成(Image 2 出 Q 版形象 → Tripo 转 3D),地图使用开源项目的赛道资产。暂定名 NYU Shanghai Grand Prix。</p>
+<p><strong>与作业的对应关系</strong>:属于作业 Part 1 的 Creative Coding Project。截止时间是 2026-10-28(周三)23:59,通过 Google Docs 提交,今天起还有 7 天。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>作业交付物</th>
+<th>本项目对应内容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Part 1 提案(约 150 词)</td>
+<td>见第 10 节英文草稿</td>
+</tr>
+<tr>
+<td>Part 2 创作成品</td>
+<td>可游玩的游戏链接 + 录屏 + 截图</td>
+</tr>
+<tr>
+<td>Part 2 过程记录</td>
+<td>prompt / 输出 / 修改日志(第 10 节模板)</td>
+</tr>
+<tr>
+<td>Part 3 反思文章(约 1,000 词)</td>
+<td>基于过程日志写作</td>
+</tr>
+</tbody>
+</table></div>
+<p>评分权重里 Reflection 占 50%、Collaboration 占 30%,成品本身只占 10% + 10%。所以这份 PRD 把“过程可记录”当成和“游戏能跑”同等重要的需求。</p>
+<h2>2. 目标与非目标</h2>
+<p>核心目标是 10-28 在课堂 Peer Review 时,同学用自己的电脑打开链接就能 2–4 人同场跑完一局。</p>
+<p><strong>目标</strong></p>
+<ul>
+<li>2–4 名玩家通过房间码进同一局</li>
+<li>每局开始前可替换车手和车,自由组合</li>
+<li>10 秒地图投票,票数相同则随机</li>
+<li>3 圈制比赛,有排名和结算页,可再来一局</li>
+<li>所有车与车手资产来自 GenAI 生成,并保留完整生成记录</li>
+</ul>
+<p><strong>非目标(这 7 天不做)</strong></p>
+<ul>
+<li>账号系统、匹配系统、排行榜持久化</li>
+<li>防作弊、服务器权威物理</li>
+<li>手机端触控适配</li>
+<li>写实物理(只做街机手感)</li>
+<li>超过 3 张地图、道具系统(列为 P2,有时间再加)</li>
+</ul>
+<h2>3. 用户流程</h2>
+<p>玩家只在第一次进房时输入房间码;之后每一局都从“选车手 + 选车”开始,所以替换角色和车是每局的固定环节。</p>
+<p class="widget-note">一局游戏流程: 7 个阶段,1 个循环 — 原始导出未包含此图表。</p>
+
+<p>代码里对应 6 个阶段状态:LOBBY → SELECT → VOTE → COUNTDOWN → RACE → RESULTS。阶段切换和所有计时(10 秒投票、3 秒倒计时、冲线后 30 秒收尾)都由服务器统一触发,保证所有人同时进入下一阶段。</p>
+<h2>4. 功能需求与优先级</h2>
+<p>P0 是 10-26 课前必须能跑的最小闭环;P1 是提交前补齐;P2 只在有余力时做。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>模块</th>
+<th>需求</th>
+<th>优先级</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F1</td>
+<td>房间</td>
+<td>创建房间生成 4 位房间码,其他人输码加入,上限 4 人</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F2</td>
+<td>大厅</td>
+<td>显示玩家列表、昵称、准备状态;全员准备后房主可开始</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F3</td>
+<td>选车手</td>
+<td>横向卡片选 4–6 位 Q 版车手,带 3D 转台预览</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F4</td>
+<td>选车</td>
+<td>选 3–4 辆车,车手实时坐进所选车里预览组合</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F5</td>
+<td>选择规则</td>
+<td>同一车手可否被多人选择:默认允许,头顶显示玩家昵称区分</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>F6</td>
+<td>地图投票</td>
+<td>10 秒倒计时,显示每张图实时票数;平票或无人投票则随机</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F7</td>
+<td>发车</td>
+<td>4 个发车位,3-2-1-GO 倒计时,倒计时内锁定输入</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F8</td>
+<td>驾驶</td>
+<td>WASD / 方向键,街机手感,掉出赛道 2 秒后重置到最近检查点</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F9</td>
+<td>圈数判定</td>
+<td>按顺序经过检查点才算一圈,防止抄近路;3 圈</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F10</td>
+<td>实时排名</td>
+<td>按 圈数 → 检查点序号 → 到下一检查点距离 排序,HUD 显示名次与圈数</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>F11</td>
+<td>结算</td>
+<td>第一名冲线后 30 秒强制结束,显示名次、用时、车手 + 车组合</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F12</td>
+<td>再来一局</td>
+<td>结算后回到选车手页,房间与玩家保留</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>F13</td>
+<td>断线处理</td>
+<td>玩家掉线后其车辆消失,比赛继续;房主掉线则房主转移</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>F14</td>
+<td>音效</td>
+<td>引擎声、倒计时、冲线音效</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>F15</td>
+<td>小地图</td>
+<td>右下角俯视小地图显示各车位置</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>F16</td>
+<td>加速道具</td>
+<td>赛道上的加速带或拾取道具</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>F17</td>
+<td>AI 车</td>
+<td>人数不足时补机器人车</td>
+<td>P2</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>车手 + 车的组合方式</strong>:车手模型单独生成,运行时挂到车模型的 <code>seat</code> 锚点上(Q 版大头正好露在车外,形成“大头娃娃”效果)。这样 N 个车手 × M 辆车只需要 N + M 个模型,不需要 N × M 个。</p>
+<h2>5. AI 资产管线:Image 2 + Tripo</h2>
+<p>每个资产走同一条 6 步管线,每一步都写进过程日志——这条管线本身就是反思文章里“我是 author 还是 editor”的证据。</p>
+<ol>
+<li><strong>定风格基准</strong>:先用 Image 2 生成 1 张满意的 Q 版车手作为“风格锚”,之后每次生成都附上这张图 + 同一段风格 prompt(例:chibi, 2.5 head-to-body ratio, racing suit in NYU violet, front view, neutral background, seated pose)。</li>
+<li><strong>生成车手 2D</strong>:每位车手出 3–4 张候选,选 1 张。要求正面、无遮挡、纯色背景,方便 Tripo 识别。</li>
+<li><strong>Tripo 转 3D</strong>:车手用 image-to-3D;车用 text-to-3D 或先用 Image 2 出车的概念图再转。目标是低多边形卡通风格,和车手统一。</li>
+<li><strong>Blender 清理</strong>:统一比例(1 单位 = 1 米)、朝向(车头朝 −Z)、原点放在车底中心;减面到车 ≤ 20k 三角面、车手 ≤ 10k;在车上加名为 <code>seat</code> 的空物体作为车手挂点。</li>
+<li><strong>导出压缩</strong>:导出 GLB,用 gltf-transform 做 Draco / meshopt 压缩,单个文件尽量 &lt; 2 MB,保证同学在校园网里加载不卡。</li>
+<li><strong>登记清单</strong>:写入 <code>assets/manifest.json</code>(id、显示名、文件路径、缩略图、生成工具与日期),游戏读这个清单渲染选择界面。</li>
+</ol>
+<p><strong>数量目标</strong>:车手 4–6 位、车 3–4 辆。生成失败(穿模、多手指、轮子变形)时记录原因并截图,失败案例对反思文章最有价值。</p>
+<p><strong>待确认</strong>:Tripo 当前套餐对生成模型的版权 / 商用条款是什么(免费档与付费档可能不同)。这直接回答作业里“Who owns the content”这个问题,建议截图保存条款页面。</p>
+<h2>6. 技术架构与联机方案</h2>
+<p>采用“客户端各自模拟、服务器只管规则”的轻量方案:7 天内做服务器权威物理不现实,课堂试玩也不需要防作弊。</p>
+<p class="widget-note">系统架构: 客户端、房间服务器、静态资源 — 原始导出未包含此图表。</p>
+
+<p>每个客户端只算自己的车,以 20 Hz 发送位置、朝向、速度、圈数和检查点序号;其他人的车用约 100 ms 的缓冲做插值,避免抖动。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>层</th>
+<th>选型</th>
+<th>备选</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>渲染</td>
+<td>Three.js</td>
+<td>React Three Fiber</td>
+<td>GLB 支持成熟,AI 编程助手最熟悉</td>
+</tr>
+<tr>
+<td>物理</td>
+<td>Rapier(自带车辆控制器)</td>
+<td>cannon-es RaycastVehicle</td>
+<td>街机车辆开箱即用</td>
+</tr>
+<tr>
+<td>联机</td>
+<td>Colyseus(Node.js)</td>
+<td>Socket.IO</td>
+<td>自带房间与状态同步,房间码容易做</td>
+</tr>
+<tr>
+<td>构建</td>
+<td>Vite</td>
+<td>—</td>
+<td>热更新快</td>
+</tr>
+<tr>
+<td>部署</td>
+<td>服务器 + 前端同放一台云主机</td>
+<td>校园网局域网开服</td>
+<td>见下方风险</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>部署风险</strong>:试玩同学在上海,海外免费托管平台在国内可能访问慢或不稳定,WebSocket 尤其容易断。请在 10-25 实测;不行就用一台笔记本在教室局域网内开服,或租一台国内云服务器。</p>
+<h2>7. 地图来源与授权</h2>
+<p>首选 CC0 的模块化赛道套件,因为不需要署名、改动自由、导入最快;SuperTuxKart 赛道质量高但转换成本大,放在第三张图。以下授权信息凭经验列出,下载前请在各自页面核对 license 文件。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>候选</th>
+<th>来源</th>
+<th>授权(待核对)</th>
+<th>需要的工作</th>
+<th>建议</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>模块化赛道 A</td>
+<td>Kenney Racing Kit</td>
+<td>CC0</td>
+<td>用模块拼一条赛道,加检查点</td>
+<td>第 1 张图</td>
+</tr>
+<tr>
+<td>模块化赛道 B</td>
+<td>Kenney 同套件另拼一条</td>
+<td>CC0</td>
+<td>换布局、换配色</td>
+<td>第 2 张图</td>
+</tr>
+<tr>
+<td>完整赛道</td>
+<td>SuperTuxKart 官方赛道</td>
+<td>多为 CC BY-SA / GPL,逐个核对</td>
+<td>从 Blender 文件转 GLB,需要署名与相同方式共享</td>
+<td>第 3 张图(P1)</td>
+</tr>
+<tr>
+<td>其他</td>
+<td>Sketchfab 上 CC BY 赛道</td>
+<td>CC BY</td>
+<td>署名,检查面数</td>
+<td>备选</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>每张地图必须具备</strong>:可行驶的碰撞网格、4 个发车位、按顺序编号的检查点触发区、终点线、出界重置区、一张投票界面缩略图。</p>
+<p>游戏的 Credits 页要列出所有地图来源与授权,这也能作为反思文章里“开源资产 vs AI 生成资产”对比的素材。</p>
+<h2>8. 肖像与伦理风险</h2>
+<p>用真实的 NYU Shanghai 领导照片做 Q 版车手是这个项目最有趣的点,也是最需要提前处理的风险;建议在 10-24 生成车手之前定下方案。</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>风险</th>
+<th>说明</th>
+<th>处理方式</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>肖像同意</td>
+<td>被做成游戏角色的人可能不知情,也可能不喜欢</td>
+<td>发邮件说明用途(课程作业、仅课堂展示)并征求同意;未同意的人不放进游戏</td>
+</tr>
+<tr>
+<td>照片上传第三方</td>
+<td>照片会上传到 Image 2 和 Tripo 的服务器</td>
+<td>课程大纲禁止向 GenAI 提交个人信息和受版权保护的材料;官网头像可能属于学校版权,建议先问 Prof. Fedtke 是否可以</td>
+</tr>
+<tr>
+<td>内容尊严</td>
+<td>撞车、垫底等情境可能被看成调侃</td>
+<td>不加嘲讽性台词或丑化造型;结算页文案保持中性</td>
+</tr>
+<tr>
+<td>传播范围</td>
+<td>链接被转发到课堂以外</td>
+<td>房间需房间码才能进入;作业结束后下线或换成原创角色</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>备用方案</strong>:准备 4–6 位纯文字描述生成的原创 Q 版车手(不参照任何真人)。同意情况不明时直接用备用方案,管线和代码完全不变,只换资产。</p>
+<p>无论最后用哪种方案,这个决策过程都可以直接写进反思文章的 Ethical Considerations 部分:AI 让“把任何人做成角色”的成本降到几分钟,同意和尊严的问题就从技术问题变成了作者的责任。</p>
+<p><strong>待确认</strong>:是否已联系相关领导或其办公室?是否已问过教授?</p>
+<h2>9. 7 天排期与验收标准</h2>
+<p>10-26(周一)上课前要有能联机跑完一局的 P0 版本,周一课上直接拉同学试玩;最后两天留给反思文章。</p>
+<p><strong>每日任务</strong></p>
+<ul>
+<li>[ ] 10-21 周三:定稿 PRD 与英文提案;建仓库;开始过程日志</li>
+<li>[ ] 10-22 周四:单人驾驶原型——Kenney 赛道、街机车辆、追尾相机、出界重置</li>
+<li>[ ] 10-23 周五:联机——房间码、大厅、位置同步,两个浏览器窗口能同场跑</li>
+<li>[ ] 10-24 周六:资产——确定肖像方案;Image 2 + Tripo 生成车手和车;Blender 清理;选择界面</li>
+<li>[ ] 10-25 周日:流程——10 秒投票、3-2-1 发车、检查点与圈数、结算页;第 2 张地图</li>
+<li>[ ] 10-26 周一:部署 + 课上试玩;收集同学反馈;修 bug;录屏与截图</li>
+<li>[ ] 10-27 周二:写约 1,000 词反思;整理日志与截图</li>
+<li>[ ] 10-28 周三:课上 Peer Review;按反馈修改;23:59 前在 Google Docs 提交全部材料</li>
+</ul>
+<p><strong>落后时的砍功能顺序</strong>:先砍 P2 → 地图减到 2 张 → 车手 / 车减到各 3 个 → 部署失败就用局域网演示 + 录屏。反思文章永远不砍。</p>
+<p><strong>验收标准(提交前逐条打勾)</strong></p>
+<ul>
+<li>[ ] 4 台不同电脑在校园网下能用房间码进入同一局</li>
+<li>[ ] 从大厅到结算全流程无需刷新页面,可连续再来一局</li>
+<li>[ ] 投票 10 秒到时自动进入发车,平票时随机</li>
+<li>[ ] 抄近路不计圈,名次显示正确</li>
+<li>[ ] 至少 4 位车手 × 3 辆车可自由组合,车手正确坐在座位上</li>
+<li>[ ] 首次加载 ≤ 15 秒(校园网)</li>
+<li>[ ] Credits 页列出全部地图与工具来源</li>
+<li>[ ] 过程日志 ≥ 15 条记录,含至少 3 个失败案例截图</li>
+</ul>
+<h2>10. 英文提案草稿与过程记录</h2>
+<p><strong>Part 1 Proposal(约 150 词,可直接修改后提交)</strong></p>
+<p>For the AI Writathon, I will build a small browser-based 3D multiplayer racing game. Classmates join a room with a code, choose a driver and a car, vote on a track within ten seconds, and race three laps. Almost every visual asset will be machine-made: I will use Image 2 to create chibi-style driver portraits and Tripo AI to turn those portraits and text prompts into 3D drivers and cars. Tracks will come from open-source asset kits, and I will work with an AI coding assistant on the game logic and networking. My strategy is to treat the AI tools as fast but unreliable production partners. I set the style rules, choose and reject outputs, repair models by hand, and log every prompt, failure, and manual edit. This record will let me analyze where authorship sits in a project whose assets are generated by machines but whose design decisions are mine.</p>
+<p>(若最终使用真人领导形象,可在第三句后补一句:Some drivers will be caricatures of NYU Shanghai leaders, used only with their permission.)</p>
+<p><strong>过程日志模板</strong>(每次生成或手动修改都记一行)</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>日期</th>
+<th>工具</th>
+<th>输入 / Prompt</th>
+<th>输出概述</th>
+<th>结果</th>
+<th>我做的修改</th>
+<th>截图</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10-24</td>
+<td>Image 2</td>
+<td></td>
+<td></td>
+<td>采用 / 修改后采用 / 弃用</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Tripo</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>编程助手</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<p>“结果”和“我做的修改”两列最重要:它们直接对应反思文章里的 collaborator / editor / author / supervisor 角色问题。</p><footer><a href="index.html">Back to the development journal</a></footer></main></body></html>

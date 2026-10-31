@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PRD (English) | NYU Shanghai Grand Prix</title><style>*{box-sizing:border-box}html{color-scheme:dark;scroll-behavior:smooth}body{margin:0;background:#121016;color:#f3eef7;font:18px/1.65 Georgia,"Times New Roman",serif}a{color:#c0a0f5}a:hover{color:#c8f04b}header{background:#1a1721;border-bottom:1px solid #332c3f;padding:18px max(20px,calc((100vw - 1040px)/2));font-family:system-ui,sans-serif}nav{display:flex;gap:20px;flex-wrap:wrap}main{max-width:1040px;margin:auto;padding:30px 20px 70px}h1,h2,h3{font-family:system-ui,sans-serif;line-height:1.25}h1{font-size:clamp(28px,5vw,42px)}h2{margin-top:44px;font-size:26px;color:#c8f04b}p,li{overflow-wrap:anywhere}.notice{padding:18px 22px;border:1px solid #544167;border-radius:12px;background:#231f2c;font:15px/1.6 system-ui,sans-serif;margin:24px 0}.table-scroll{overflow-x:auto;margin:20px 0}table{border-collapse:collapse;width:100%;min-width:540px;font-size:15px}th,td{border:1px solid #44394f;padding:10px 12px;text-align:left;vertical-align:top}th{background:#231f2c;font-family:system-ui,sans-serif}code{font-size:.9em;background:#231f2c;padding:2px 4px}li{margin:6px 0}.widget-note{color:#ab9fba;font-style:italic}footer{border-top:1px solid #332c3f;padding-top:24px;margin-top:40px;font:14px/1.6 system-ui,sans-serif}</style></head>
+<body><header><nav aria-label="Site"><a href="../index.html">Grand Prix</a><a href="index.html">Dev journal</a><a href="prd-zh.html">中文早期方案</a><a href="../play/index.html">Play the game</a></nav></header><main><h1>PRD (English)</h1><p>NYU Shanghai Grand Prix / October 21, 2026</p><aside class="notice">Original planning document dated October 21, 2026, recovered from the Claude export. It records the plan at that time; later changes are documented in the dev journal. Two embedded diagrams were not included in the Markdown export. The original source is available below.<br><a href="prd-en.md" download>Download original Markdown</a></aside><h2>1. Overview</h2>
+<p>A browser-based 3D cartoon racing game for one player against three AI opponents. The player picks a driver and a car, votes on a map within 10 seconds alongside the AI drivers, and races three laps. All cars and drivers are generated with GenAI (Image 2 for chibi portraits, Tripo for 3D), and maps come from open-source track assets. Online multiplayer is kept as a future extension. Working title: NYU Shanghai Grand Prix.</p>
+<p><strong>Mapping to the assignment</strong>: this is the Creative Coding Project option in Part 1. It is due Wednesday, 2026-10-28, 11:59 PM, submitted through Google Docs, which leaves 7 days from today.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Assignment deliverable</th>
+<th>What this project provides</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Part 1 proposal (about 150 words)</td>
+<td>Draft in Section 11</td>
+</tr>
+<tr>
+<td>Part 2 creative piece</td>
+<td>Playable game link + screen recording + screenshots</td>
+</tr>
+<tr>
+<td>Part 2 documentation</td>
+<td>Log of prompts, outputs and edits (template in Section 11)</td>
+</tr>
+<tr>
+<td>Part 3 reflection (about 1,000 words)</td>
+<td>Written from the process log</td>
+</tr>
+</tbody>
+</table></div>
+<p>Reflection is 50% of the grade and Collaboration 30%; the product itself counts for only 10% + 10%. This PRD therefore treats a recordable process as a requirement equal to a working game.</p>
+<h2>2. Goals and non-goals</h2>
+<p>The core goal: during in-class Peer Review on 10-28, a classmate sits at the laptop and finishes a full race against three AI drivers, with no setup and no other players needed.</p>
+<p><strong>Goals</strong></p>
+<ul>
+<li>Single-player races against 3 AI opponents that drive competently and never get stuck for long</li>
+<li>Drivers and cars can be swapped and freely combined before every race; the AI takes the remaining drivers</li>
+<li>10-second map vote in which the AI drivers also vote; ties are broken at random</li>
+<li>3-lap races with rankings, a results screen, and race again</li>
+<li>One consistent cartoon look across AI-generated assets, open-source maps and UI</li>
+<li>Every car and driver asset is GenAI-generated, with a complete generation record</li>
+</ul>
+<p><strong>Non-goals (not in these 7 days)</strong></p>
+<ul>
+<li>Online multiplayer (kept as an extension; see Section 7)</li>
+<li>Accounts or persistent leaderboards</li>
+<li>Machine-learned AI drivers (rule-based racing lines only)</li>
+<li>Mobile touch controls</li>
+<li>Realistic physics or rendering (arcade handling, cartoon shading)</li>
+<li>More than 3 maps, or an item system (listed as P2 if time allows)</li>
+</ul>
+<h2>3. User flow</h2>
+<p>Every race starts at driver + car selection, so swapping characters and cars is a fixed step of each round. The three AI opponents take the three drivers the player did not pick, each in a random car, so the grid always shows all four drivers.</p>
+<p class="widget-note">Race flow: 6 stages, 1 loop — Diagram not included in the source export.</p>
+
+<p>In code these are 6 phase states: MENU → SELECT → VOTE → COUNTDOWN → RACE → RESULTS, held in one game-state module. The race ends when the player crosses the line; AI cars still on track are ranked by their current progress.</p>
+<h2>4. Functional requirements and priorities</h2>
+<p>P0 is the minimum loop that must run before class on 10-26; P1 is completed before submission; P2 is only for spare time.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Module</th>
+<th>Requirement</th>
+<th>Priority</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>F1</td>
+<td>Start screen</td>
+<td>Title, Play, difficulty (Easy / Normal / Hard), Credits</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F2</td>
+<td>Driver select</td>
+<td>Card carousel of 4 chibi drivers (Tong Shijun, Jeffrey S. Lehman, Bei Wu, David G. Atwill) with a 3D turntable preview</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F3</td>
+<td>Car select</td>
+<td>3–4 cars; the chosen driver sits in the chosen car in a live preview</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F4</td>
+<td>AI grid</td>
+<td>The 3 AI opponents take the remaining drivers, each in a random car; nameplates show driver names</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F5</td>
+<td>Map vote</td>
+<td>10-second countdown; each AI casts a random vote, revealed one by one; tie or no vote → random</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F6</td>
+<td>Start</td>
+<td>4 grid slots, 3-2-1-GO countdown, input locked during countdown</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F7</td>
+<td>Driving</td>
+<td>WASD / arrow keys, arcade handling; off-track for 2 s → reset to last checkpoint</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F8</td>
+<td>AI driving</td>
+<td>Each AI follows the map's racing line: steers toward a look-ahead waypoint and brakes before sharp turns</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F9</td>
+<td>AI difficulty</td>
+<td>Difficulty sets AI top speed and how far it drifts from the racing line; light rubber-banding keeps races close</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>F10</td>
+<td>AI recovery</td>
+<td>An AI stuck for 2 s reverses; still stuck after 4 s → reset to last checkpoint</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>F11</td>
+<td>Lap logic</td>
+<td>A lap counts only after passing checkpoints in order (no shortcuts); 3 laps; same rule for AI</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F12</td>
+<td>Live ranking</td>
+<td>Sort by laps → checkpoint index → distance to next checkpoint; HUD shows place and lap</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>F13</td>
+<td>Results</td>
+<td>Shown when the player finishes; place, time, driver + car for all 4 racers</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>F14</td>
+<td>Race again</td>
+<td>Results return to driver select</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>F15</td>
+<td>Audio</td>
+<td>Cartoon engine sounds, countdown and finish jingles</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>F16</td>
+<td>Minimap</td>
+<td>Top-down minimap in the corner with every car</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>F17</td>
+<td>Boost</td>
+<td>Boost pads or pickups on the track</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>F18</td>
+<td>Online multiplayer</td>
+<td>Room codes and synced races; extension after the assignment</td>
+<td>Extension</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>How drivers and cars combine</strong>: drivers are generated as separate models and attached at runtime to a <code>seat</code> anchor on each car. The oversized chibi head sticks out of the car for a bobblehead look. 4 drivers × M cars therefore need only 4 + M models, not 4 × M.</p>
+<h2>5. AI asset pipeline: Image 2 + Tripo</h2>
+<p>Every asset goes through the same 6-step pipeline, and every step is logged. The pipeline itself is the evidence for the reflection's question of whether I acted as author or editor.</p>
+<ol>
+<li><strong>Set a style anchor</strong>: generate one chibi driver in Image 2 that I am happy with. Every later generation reuses this image plus the same style prompt (e.g. cartoon chibi, cel-shaded, bold outlines, 2.5 head-to-body ratio, racing suit in NYU violet, front view, neutral background, seated pose).</li>
+<li><strong>Generate drivers in 2D</strong>: 3–4 candidates per driver, pick one. Front-facing, unobstructed, plain background, so Tripo reads it cleanly.</li>
+<li><strong>Convert to 3D in Tripo</strong>: image-to-3D for drivers; text-to-3D for cars, or an Image 2 concept sketch first. Target a low-poly cartoon style that matches the drivers.</li>
+<li><strong>Clean up in Blender</strong>: unify scale (1 unit = 1 m) and orientation (car nose toward −Z), origin at the car's bottom center. Decimate to ≤ 20k triangles per car and ≤ 10k per driver. Add an empty named <code>seat</code> on each car as the driver mount.</li>
+<li><strong>Export and compress</strong>: export GLB and compress with gltf-transform (Draco / meshopt). Keep each file under about 2 MB so it loads quickly on campus Wi-Fi.</li>
+<li><strong>Register in a manifest</strong>: add to <code>assets/manifest.json</code> (id, display name, file path, thumbnail, tool and date). The selection screens are rendered from this list.</li>
+</ol>
+<p><strong>Quantity targets</strong>: 4 drivers (the four leaders, or 4 original fallback drivers; see Section 9) and 3–4 cars. When a generation fails (clipping, extra fingers, warped wheels), record the reason and take a screenshot; failures are the most useful material for the reflection.</p>
+<p><strong>Open question</strong>: what do Tripo's current terms say about ownership and commercial use on my plan (free and paid tiers may differ)? This directly answers the assignment's "Who owns the content" question, so screenshot the terms page.</p>
+<h2>6. Art direction: cartoon style</h2>
+<p>The whole game uses one cartoon look, enforced in code at load time, so Tripo models, Kenney maps and the UI match even when the AI outputs do not. Tripo models often come back semi-realistic; converting them to toon materials is a deliberate human style decision worth noting in the reflection.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Element</th>
+<th>Rule</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Shading</td>
+<td>Three.js <code>MeshToonMaterial</code> with a 3-step gradient map on every model; Tripo's PBR materials are swapped on load, keeping only the base color</td>
+</tr>
+<tr>
+<td>Outlines</td>
+<td>Dark violet outline on cars, drivers and track props (inverted-hull mesh or an outline post-process)</td>
+</tr>
+<tr>
+<td>Color</td>
+<td>Saturated, flat colors; NYU violet (#57068C) as the accent on suits, UI and finish line; gradient sky, no realistic skybox</td>
+</tr>
+<tr>
+<td>Proportions</td>
+<td>Drivers 2.5 heads tall, heads clearly visible above the cockpit; cars chunky, short and on oversized wheels</td>
+</tr>
+<tr>
+<td>Textures</td>
+<td>Flat colors or simple painted textures; simplify noisy Tripo textures in Blender</td>
+</tr>
+<tr>
+<td>Effects</td>
+<td>Puffy smoke clouds, speed lines at high speed, squash-and-stretch on landing, a bouncy chase camera</td>
+</tr>
+<tr>
+<td>UI</td>
+<td>Rounded heavy font, thick outlines, sticker-like buttons, a big bouncing 3-2-1</td>
+</tr>
+<tr>
+<td>Acceptance check</td>
+<td>Every new asset is placed beside the style anchor in the same scene before it is accepted; anything that looks photoreal goes back through cleanup</td>
+</tr>
+</tbody>
+</table></div>
+<h2>7. Architecture</h2>
+<p>The game runs entirely in the browser with no server: the player and three AI drivers share one physics world, and the AI produces steering and throttle the same way the keyboard does.</p>
+<p class="widget-note">System architecture: browser game, AI opponents, static assets — Diagram not included in the source export.</p>
+
+<p>Each map stores an ordered racing line of waypoints (placed by hand in Blender or a small in-game editor). Every frame, each AI looks a few waypoints ahead, steers toward that point, and slows down when the angle to the next segment is sharp. Difficulty only changes AI top speed and random offset from the line, so one controller serves all three levels.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Layer</th>
+<th>Choice</th>
+<th>Alternative</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Rendering</td>
+<td>Three.js with <code>MeshToonMaterial</code></td>
+<td>React Three Fiber</td>
+<td>Mature GLB support; built-in toon material; AI coding assistants know it best</td>
+</tr>
+<tr>
+<td>Physics</td>
+<td>Rapier (built-in vehicle controller)</td>
+<td>cannon-es RaycastVehicle</td>
+<td>Arcade vehicles out of the box</td>
+</tr>
+<tr>
+<td>AI drivers</td>
+<td>Custom waypoint follower</td>
+<td>Yuka steering library</td>
+<td>About 100 lines; easy to tune and explain</td>
+</tr>
+<tr>
+<td>Build</td>
+<td>Vite</td>
+<td>—</td>
+<td>Fast hot reload</td>
+</tr>
+<tr>
+<td>Deployment</td>
+<td>Any static host, or run locally from the laptop</td>
+<td>—</td>
+<td>No server needed for the demo</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Multiplayer extension</strong>: keep phases, timers and lap logic in one game-state module that does not touch rendering. A Colyseus room server can later take over that module, and AI slots become empty seats for human players.</p>
+<p><strong>Deployment note</strong>: with no WebSocket, the earlier hosting risk mostly disappears. For the 10-26 playtest, run it from your own laptop so slow network access from Shanghai cannot break the demo.</p>
+<h2>8. Map sources and licenses</h2>
+<p>CC0 modular track kits come first: no attribution, free to modify, fastest to import. SuperTuxKart tracks look better but cost more to convert, so they are the third map. The license notes below are from experience; check each license file before downloading.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Candidate</th>
+<th>Source</th>
+<th>License (to verify)</th>
+<th>Work needed</th>
+<th>Plan</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Modular track A</td>
+<td>Kenney Racing Kit</td>
+<td>CC0</td>
+<td>Assemble a track from pieces, add checkpoints</td>
+<td>Map 1</td>
+</tr>
+<tr>
+<td>Modular track B</td>
+<td>Same Kenney kit, new layout</td>
+<td>CC0</td>
+<td>New layout and color scheme</td>
+<td>Map 2</td>
+</tr>
+<tr>
+<td>Full track</td>
+<td>Official SuperTuxKart tracks</td>
+<td>Mostly CC BY-SA / GPL, check each</td>
+<td>Convert Blender files to GLB; attribution and share-alike</td>
+<td>Map 3 (P1)</td>
+</tr>
+<tr>
+<td>Other</td>
+<td>CC BY tracks on Sketchfab</td>
+<td>CC BY</td>
+<td>Attribution, check polygon count</td>
+<td>Backup</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Every map must have</strong>: a drivable collision mesh, 4 grid slots, ordered checkpoint triggers, a finish line, an AI racing line of ordered waypoints, out-of-bounds reset zones, and a thumbnail for the vote screen.</p>
+<p>A Credits screen lists every map source and license. It also gives the reflection a comparison between open-source assets and AI-generated ones.</p>
+<h2>9. Likeness and ethical risks</h2>
+<p>Turning real NYU Shanghai leaders into chibi drivers is the project's most fun idea and its biggest risk to settle early; decide the approach before generating drivers on 10-24.</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Risk</th>
+<th>What it means</th>
+<th>Mitigation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Consent</td>
+<td>People turned into game characters may not know, or may not like it</td>
+<td>Email them explaining the use (coursework, in-class demo only) and ask permission; leave out anyone who does not agree</td>
+</tr>
+<tr>
+<td>Uploading photos</td>
+<td>Photos are uploaded to Image 2's and Tripo's servers</td>
+<td>The syllabus prohibits submitting personal information and copyrighted materials to GenAI; official headshots may be university-owned, so ask Prof. Fedtke first</td>
+</tr>
+<tr>
+<td>Dignity</td>
+<td>Crashing or finishing last could read as mockery</td>
+<td>No mocking lines or unflattering designs; neutral wording on the results screen</td>
+</tr>
+<tr>
+<td>Spread</td>
+<td>The link gets shared beyond the class</td>
+<td>Share the link or build only with the class; take it offline or swap to original characters after the assignment</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Fallback</strong>: prepare 4–6 original chibi drivers generated from text descriptions only, not based on any real person. If consent is unclear, use the fallback; the pipeline and code stay the same, only the assets change.</p>
+<p>Whichever option you choose, the decision process belongs in the reflection's Ethical Considerations section. AI cuts the cost of turning anyone into a character to a few minutes, so consent and dignity shift from technical problems to the author's responsibility.</p>
+<p><strong>Open questions</strong>: have you contacted the leaders or their offices? Have you asked the professor?</p>
+<h2>10. 7-day schedule and acceptance criteria</h2>
+<p>A P0 build where the player finishes a full race against 3 AI cars must exist before class on Monday 10-26, so classmates can take turns playing it there; the last two days go to the reflection.</p>
+<p><strong>Daily tasks</strong></p>
+<ul>
+<li>[ ] Wed 10-21: finalize PRD and proposal; create repo; start the process log</li>
+<li>[ ] Thu 10-22: driving prototype on a Kenney track — arcade car, chase camera, out-of-bounds reset; test toon shading + outlines early</li>
+<li>[ ] Fri 10-23: AI opponents — racing-line waypoints for map 1, waypoint follower, 3 AI cars finishing 3 laps</li>
+<li>[ ] Sat 10-24: assets — settle the likeness approach; generate 4 drivers and 3–4 cars with Image 2 + Tripo; Blender cleanup; toon conversion; selection screens</li>
+<li>[ ] Sun 10-25: flow — 10-second vote with AI votes, 3-2-1 start, laps and ranking, results screen; map 2 with its racing line; cartoon effects and UI</li>
+<li>[ ] Mon 10-26: in-class playtest on your laptop; tune AI difficulty from feedback; fix bugs; record video and screenshots</li>
+<li>[ ] Tue 10-27: write the \~1,000-word reflection; organize logs and screenshots</li>
+<li>[ ] Wed 10-28: in-class Peer Review; revise; submit everything in Google Docs by 11:59 PM</li>
+</ul>
+<p><strong>What to cut if behind, in order</strong>: P2 features → down to 2 maps → one AI difficulty only → cartoon effects (keep toon shading and outlines) → down to 3 cars. The reflection is never cut.</p>
+<p><strong>Acceptance criteria (check before submitting)</strong></p>
+<ul>
+<li>[ ] Start screen to results runs without a page refresh, and race again works back to back</li>
+<li>[ ] All 3 AI cars finish 3 laps on every map, and none stays stuck for more than 5 s</li>
+<li>[ ] A first-time player can beat Easy, and Normal feels like a close race</li>
+<li>[ ] The vote moves to the start automatically after 10 s with AI votes counted; ties are random</li>
+<li>[ ] Shortcuts do not count as laps for anyone; places display correctly for all 4 cars</li>
+<li>[ ] All 4 drivers × at least 3 cars combine freely, with drivers seated correctly</li>
+<li>[ ] Every asset renders with toon shading and outlines; nothing looks photoreal next to the style anchor</li>
+<li>[ ] At least 30 fps with 4 cars on a typical student laptop</li>
+<li>[ ] Credits screen lists every map and tool source</li>
+<li>[ ] Process log has ≥ 15 entries, including screenshots of at least 3 failures</li>
+</ul>
+<h2>11. Proposal draft and process log template</h2>
+<p><strong>Part 1 Proposal (about 150 words, edit before submitting)</strong></p>
+<p>For the AI Writathon, I will build a small browser-based 3D cartoon racing game. The player chooses a driver and a car, votes on a track within ten seconds alongside three AI opponents, and races them over three laps. Almost every visual asset will be machine-made: I will use Image 2 to create chibi-style driver portraits and Tripo AI to turn those portraits and text prompts into 3D drivers and cars. Tracks will come from open-source asset kits, and I will work with an AI coding assistant on the game logic and the AI drivers. My strategy is to treat the AI tools as fast but unreliable production partners. I set the cartoon style rules, choose and reject outputs, repair models by hand, and log every prompt, failure, and manual edit. This record will let me analyze where authorship sits in a project whose assets are generated by machines but whose design decisions are mine.</p>
+<p>(If you end up using real leaders' likenesses, add after the third sentence: Some drivers will be caricatures of NYU Shanghai leaders, used only with their permission.)</p>
+<p><strong>Process log template</strong> (one row per generation or manual edit)</p>
+<div class="table-scroll"><table>
+<thead>
+<tr>
+<th>Date</th>
+<th>Tool</th>
+<th>Input / prompt</th>
+<th>Output summary</th>
+<th>Outcome</th>
+<th>My edits</th>
+<th>Screenshot</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>10-24</td>
+<td>Image 2</td>
+<td></td>
+<td></td>
+<td>Used / used after edits / rejected</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Tripo</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td>Coding assistant</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table></div>
+<p>The Outcome and My edits columns matter most: they map directly onto the reflection's collaborator / editor / author / supervisor question.</p><footer><a href="index.html">Back to the development journal</a></footer></main></body></html>
